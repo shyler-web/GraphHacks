@@ -35,6 +35,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 
 ## Recent commits
 
+- `chore(graph): refresh graphify graph after T1 (457 nodes, 560 edges)` — incremental `graphify update .` at HEAD; deleted root-duplicate subtree (24 nodes) gone; new scripts/debug-drill/package nodes; verify: graph.json parses = 457 nodes / 560 edges (2026-10-16)
 - `feat(memory): real FalkorDB client + health check + write/read smoke (T1.3, T1.4)` — official `falkordb@6.8.0`; `npm run health` prints `MATCH (n) RETURN count(n) => 1` exit 0; smoke MERGE writes/reads `smoke-1` text back, count stays 1; Node v18 vs `engines>=22` risk noted (2026-10-16)
 - `docs(debug): T1.2 drill — "6379 refused" (ECONNREFUSED); FalkorDB restored UP` — reproduced by stopping container; root cause container stopped; 5 hypotheses tested; `nc` exit 1→0, `redis-cli PONG` after restart (2026-10-16)
 - `docs(progress): mark T1.1 done — FalkorDB up (nc -z localhost 6379 = 0)` (2026-10-16)
