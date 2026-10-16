@@ -9,7 +9,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 | Task | What | Exit criterion | Status |
 |---|---|---|---|
 | T0.1 | `git init` + first commit | `git log --oneline -1` shows the foundation | ✅ done |
-| T0.2 | Remove root↔`src/` duplicate | `grep -rl INITIAL_TENANTS .` → one path | ⬜ todo |
+| T0.2 | Remove root↔`src/` duplicate | `grep -rl INITIAL_TENANTS src/` → one path | ✅ done |
 | T0.3 | ALWAYS block in `AGENTS.md` | rules + goal/exit + locked decisions + health present | ✅ done |
 | T1.1 | Run FalkorDB (Docker) | `nc -z localhost 6379` exits 0 | ⬜ todo |
 | T1.2 | Debug drill on "6379 refused" | Expected/Observed/Repro + 3 hypotheses | ⬜ todo |
@@ -34,4 +34,4 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 
 ## Recent commits
 
-- _(filled by the `gitter` subagent after each verified milestone)_
+- `chore(repo): remove root↔src duplicate cockpit (T0.2)` — root duplicate deleted; `src/` copy canonical; `npm run build` exit 0 (2026-10-16)
