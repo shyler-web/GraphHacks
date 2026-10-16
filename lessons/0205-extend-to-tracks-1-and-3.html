@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0205 — Extend to Tracks 1 &amp; 3</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0205 · Toolchain &amp; Setup</p>
+<h1>Extend to Tracks 1 &amp; 3</h1>
+<p class="lede">Your Track 02 memory graph already holds connected, remembered, explainable data. Tracks 01 and 03 are not rewrites — they are the <em>same</em> foundation with a different schema, a different tool set, and a different demo story.</p>
+
+<p class="win">By the end you can <em>write a concrete, low-cost extension plan for Track 01 or Track 03</em> — evidenced by a one-page plan naming what changes, what stays, and three schema changes.</p>
+
+<div class="habit">
+The graph database, the backend, the tracing, and the orchestrator are the expensive, slow-to-change parts. The schema and the tool set are where the tracks actually differ — so decide track fit by asking "what nodes and edges does this story need?", never "do I rebuild?".
+</div>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../reference/features.html">Feature set</a>
+  <a href="0204-langsmith-tracing.html">← Prev 0204</a>
+</nav>
+
+<h2>The idea</h2>
+<p>The hackathon runs <strong>three tracks</strong>, and you may enter one, two, or all three — each has its own prize <a href="#src">[1]</a>. They are described as different points on the same idea: an agent that acts on data fits Track 01, one that remembers or coordinates fits Track 02, and one that works with company knowledge fits Track 03 <a href="#src">[1]</a>.</p>
+
+<table>
+  <tr><th>Track</th><th>Story (key focus)</th><th>What it leans on</th></tr>
+  <tr><td><strong>01 · Agents That Act on Connected Data</strong></td><td>Multi-hop reasoning; graph queries and <em>algorithms as agent tools</em>; tool selection through MCP; actions based on what the graph shows; explainable results <a href="#src">[1]</a></td><td>Your graph as <strong>data</strong> + <strong>procedural memory</strong> tools the agent fires</td></tr>
+  <tr><td><strong>02 · Agent Memory and Coordination</strong></td><td>Episodic, semantic, procedural memory; persistent history; handoffs; high concurrency; per-tenant isolation <a href="#src">[1]</a> — what you already built</td><td>The <strong>three-tier memory model</strong> in one graph</td></tr>
+  <tr><td><strong>03 · Company Brain</strong></td><td>Docs, tickets, chats in one graph; who owns what / who knows what; tracing decisions to source; keeping knowledge current; answers with sources <a href="#src">[1]</a></td><td>The same graph, re-labelled as <strong>semantic memory</strong> about a company</td></tr>
+</table>
+
+<h2>Track 01 — add algorithms, let the agent act</h2>
+<p>Track 01 wants an agent that <em>decides and acts</em>. FalkorDB exposes graph algorithms as first-class calls — <code>CALL algo.&lt;name&gt;()</code> with a <code>YIELD</code> clause — using matrix-based computation for speed <a href="#src">[2]</a>. The ones the brief names map directly to agent questions:</p>
+<table>
+  <tr><th>Question</th><th>Algorithm tool</th><th>Acts on your <strong>semantic memory</strong></th></tr>
+  <tr><td>"What breaks if this service goes down?"</td><td>Shortest path (<code>SPpath</code> / Cypher <code>shortestPath()</code>)</td><td>Traces <code>:Entity</code>–<code>:RELATES_TO</code> fan-out</td></tr>
+  <tr><td>"Which node matters most?"</td><td>PageRank / centrality</td><td>Ranks <code>:Entity</code> influence</td></tr>
+  <tr><td>"Which groups are isolated?"</td><td>Weakly connected components (WCC)</td><td>Splits disconnected subgraphs</td></tr>
+</table>
+<p>The move is small: each algorithm becomes a <code>:Tool</code> node in your <strong>procedural memory</strong>, selectable through MCP, so the agent calls the algorithm instead of writing it <a href="#src">[2]</a>. The agent then <strong>acts</strong> on the result with a tool call, and you return the traversed subgraph as the explanation — which is Track 01's "explainable results" and your existing <em>explainability</em> feature, reused.</p>
+
+<h2>Track 03 — same graph, company labels</h2>
+<p>A Company Brain is the same <strong>semantic memory</strong> discipline with different entity types. You already have <code>:Entity</code>, <code>:Fact</code>, <code>:Topic</code>, and provenance via <code>:DERIVED_FROM</code>; Track 03 asks you to point those at people, teams, projects, documents, and decisions, then answer "who owns what, who knows what" and trace decisions back to their source <a href="#src">[1]</a>. The provenance edge you built for explainability <em>is</em> "tracing decisions back to their source".</p>
+
+<h2>What stays, what changes</h2>
+<table>
+  <tr><th>Stays the same (the foundation)</th><th>Changes per track</th></tr>
+  <tr><td>Node/TS backend, FalkorDB, LangSmith tracing, hand-rolled orchestrator <a href="#src">[3]</a></td><td><strong>Schema labels</strong> — new node/edge types for the new story</td></tr>
+  <tr><td>Three-tier memory model in one graph (decision D5)</td><td><strong>Tool set</strong> — add algorithms (01) or schema queries (03)</td></tr>
+  <tr><td>Multi-graph / multi-tenant topology (one graph per tenant)</td><td><strong>Demo story</strong> — the question the judge watches you answer</td></tr>
+  <tr><td>Explainability — the subgraph + sources behind every answer</td><td>—</td></tr>
+</table>
+<p>Read that as the <strong>vertical slice</strong> argument: only the top of the stack is story-specific, so an extension is a bounded change, not a horizontal slab. This is a <strong>reversible decision</strong> if your schema stays additive.</p>
+
+<div class="quiz" data-answer="1" data-explain="The backend, FalkorDB, tracing, and orchestrator are the shared foundation; the schema labels, tool set, and demo story are what actually differ between tracks.">
+  <p class="q">You add Track 03 to your Track 02 submission. Which of these <strong>changes</strong>?</p>
+  <button type="button">The backend, FalkorDB, and LangSmith tracing setup.</button>
+  <button type="button">The entity schema labels, the tool set, and the demo story.</button>
+  <button type="button">The orchestrator and the per-tenant isolation model.</button>
+</div>
+
+<div class="drill">
+Write a one-page extension plan for a track you are <em>not</em> targeting (Track 03 recommended).
+<ol>
+  <li>List <strong>3 schema changes</strong> for a Company Brain — for each name a new node label or edge type and the property it carries. Example: <code>:Person {name, role}</code>, <code>:Decision {made_at, rationale}</code>, <code>(:Decision)-[:BASED_ON]-&gt;(:Document)</code>.</li>
+  <li>Name <strong>2 tools</strong> the agent needs and whether each is a graph algorithm (Track 01) or a schema query (Track 03).</li>
+  <li>Write <strong>1 sentence</strong> of the demo story, then <strong>1 sentence</strong> on what still breaks if FalkorDB stops.</li>
+  <li>Hand the page to the AI as a spec card and ask it to flag anything that secretly requires a rewrite.</li>
+</ol>
+</div>
+
+<div class="source" id="src">
+  <h3>Sources</h3>
+  <p>[1] Track definitions and key-focus points — <a href="https://www.wemakedevs.org/hackathons/falkordb">Graph Hacks, WeMakeDevs</a> (Tracks 01–03; "enter one, two or all three").</p>
+  <p>[2] Graph algorithms as agent tools — <a href="https://docs.falkordb.com/algorithms/">FalkorDB algorithms documentation</a> (<code>CALL algo.&lt;name&gt;()</code> + <code>YIELD</code>; BFS, shortest path, PageRank, centrality, WCC, CDLP, matrix-based computation).</p>
+  <p>[3] Optional accelerator for Track 01/03 retrieval — <a href="https://github.com/FalkorDB/GraphRAG-SDK">FalkorDB GraphRAG-SDK</a>. Companion: <a href="../reference/features.html">Feature set</a> · <a href="../reference/CURRICULUM.html">Curriculum</a> · <a href="../GLOSSARY.md">Glossary</a>.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission, with the door open to Tracks 01 &amp; 03. Every claim cites a source; terms match <a href="../GLOSSARY.md">GLOSSARY.md</a>. Stuck? Ask your teacher in opencode.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>opencode Setup — Track 02</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Reference</p>
+<h1>opencode Setup</h1>
+<p class="lede">The exact configuration this cockpit project runs on: what opencode auto-loads, the eight project subagents and three skills, the permissions and MCP servers in <code>opencode.json</code>, and the graphify loop that keeps a model-agnostic map of the repo. Verify anything here against <a href="https://opencode.ai/config.json">the schema</a> — never invent fields.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../lessons/0203-configure-opencode.html">Lesson 0203 · Configure opencode</a>
+  <a href="tool-integration.html">Tool integration</a>
+  <a href="insight.html">Master plan</a>
+</nav>
+
+<p class="win">opencode reads config once at startup. Restart opencode after editing any config file, agent, or skill — otherwise your change is invisible to the running session.</p>
+
+<h2>1 · AGENTS.md — what opencode auto-reads</h2>
+<p><code>AGENTS.md</code> is the project's ambient rule file. opencode loads it into every session's context automatically (traced from the current directory up to the git worktree). This project keeps it deliberately small because it is injected <em>into every session</em>. The build order, schema, and per-task plan live in <a href="../reference/CURRICULUM.html">the curriculum</a> and <code>reference/insight.html</code> §4 instead — keeping the context budget lean.</p>
+
+<table>
+  <tr><th>Auto-read file</th><th>Purpose</th></tr>
+  <tr><td><code>AGENTS.md</code></td><td>Locked context, rules, stack, commands, security. Always in context.</td></tr>
+  <tr><td><code>docs/decisions.md</code></td><td>Decision records D1–D5 (loaded via the <code>instructions</code> array, below).</td></tr>
+  <tr><td><code>PROGRESS.md</code></td><td>Living status + recent commits (loaded via <code>instructions</code>).</td></tr>
+</table>
+
+<div class="habit">
+The <strong>ALWAYS block</strong> (AGENTS.md §"ALWAYS — locked context") is the four facts a session must never re-derive: (1) the binding rules — FalkorDB is the load-bearing graph (rule 3), Track 02, deadline Oct 18; (2) goal + <strong>exit criterion</strong> — stopping FalkorDB visibly breaks the app; (3) the locked <strong>reversible/expensive decisions</strong> (D1–D5); (4) the health check <code>npm run health</code> = <code>MATCH (n) RETURN count(n)</code>. Edit it by appending a numbered fact and, if it reverses a locked decision, recording that decision in <code>docs/decisions.md</code> first — do not reopen a locked decision silently.
+</div>
+
+<p>To edit: change <code>AGENTS.md</code>, then restart opencode. Add durable cross-session facts only — task-specific asks belong in a <strong>spec card</strong>, not the rule file. A new file added to the <code>instructions</code> array in <code>opencode.json</code> is also auto-read.</p>
+
+<h2>2 · Subagents</h2>
+<p>Defined as markdown in <code>.opencode/agent/</code> (front-matter <code>description</code>, <code>mode: subagent</code>, <code>temperature</code>, <code>permission</code>). Invoke with <code>@name</code>, or let a primary agent call them via the Task tool. Permissions below are quoted from each file's front-matter.</p>
+
+<table>
+  <tr><th>Agent</th><th>Purpose</th><th>Permissions</th><th>When to use</th></tr>
+  <tr>
+    <td><code>researcher</code></td>
+    <td>External facts, APIs, docs (web + DeepWiki), cited.</td>
+    <td>edit <em>deny</em> · bash <em>deny</em> · webfetch <em>allow</em> · websearch <em>allow</em></td>
+    <td>Current, citable info on FalkorDB, LangSmith, MCP, Tavily, memory patterns.</td>
+  </tr>
+  <tr>
+    <td><code>teacher</code></td>
+    <td>Authors one-win HTML lessons and reference pages.</td>
+    <td>edit <em>allow</em> · bash <em>ask</em> · webfetch <em>allow</em></td>
+    <td>Creating or revising files under <code>lessons/</code> or <code>reference/</code>.</td>
+  </tr>
+  <tr>
+    <td><code>planner</code></td>
+    <td>Turns vague goals into spec cards and decision records — no product code.</td>
+    <td>edit <em>allow</em> · bash <em>deny</em> · webfetch <em>allow</em></td>
+    <td>Scoping a task, choosing between options, "let's build X".</td>
+  </tr>
+  <tr>
+    <td><code>builder</code></td>
+    <td>Implements a spec card against the project; stops at first blocker.</td>
+    <td>edit <em>allow</em> · bash <em>allow</em> · webfetch <em>allow</em></td>
+    <td>Doing the build work of a vertical slice.</td>
+  </tr>
+  <tr>
+    <td><code>reviewer</code></td>
+    <td>Reviews for correctness, rule-3 "real work", regressions — read-only.</td>
+    <td>edit <em>deny</em> · bash <em>ask</em> · webfetch <em>allow</em></td>
+    <td>Before committing, or when a change claims to be "done".</td>
+  </tr>
+  <tr>
+    <td><code>debugger</code></td>
+    <td>Diagnoses a failure with the scientific method before any fix.</td>
+    <td>edit <em>ask</em> · bash <em>allow</em></td>
+    <td>Something breaks, hangs, or behaves unexpectedly.</td>
+  </tr>
+  <tr>
+    <td><code>gitter</code></td>
+    <td>Verifies, then commits + pushes with decision-bearing messages.</td>
+    <td>edit <em>deny</em> · bash: <code>*: ask</code>, <code>git * / npm * / graphify *: allow</code>, <code>cat .env*: deny</code></td>
+    <td>After a milestone passes its <strong>exit criterion</strong>.</td>
+  </tr>
+  <tr>
+    <td><code>graphify-keeper</code></td>
+    <td>Rebuilds and queries the graphify knowledge graph.</td>
+    <td>edit <em>allow</em> · bash: <code>*: ask</code>, <code>graphify *: allow</code>, <code>cat graphify-out/*: allow</code></td>
+    <td>After significant changes, or to answer a codebase question.</td>
+  </tr>
+</table>
+
+<h2>3 · Skills</h2>
+<p>Each skill is a folder with a <code>SKILL.md</code> under <code>.opencode/skills/</code> (discovered via <code>skills.paths</code>, see §4). opencode lists them in the <code>skill</code> tool description; an agent loads the full text on demand. They fire by description.</p>
+
+<table>
+  <tr><th>Skill</th><th>What it enforces</th><th>Fires when</th></tr>
+  <tr>
+    <td><code>prompt-playbook</code></td>
+    <td>The 5-line <strong>spec card</strong>: what it builds · <strong>exit criterion</strong> · out of scope · locked decisions · verify step.</td>
+    <td>Before handing any build/fix/change task to the AI; on "prompt", "spec", "task".</td>
+  </tr>
+  <tr>
+    <td><code>verify-change</code></td>
+    <td>The per-change loop: run the exit criterion immediately, never batch; this project's checks (<code>npm run build</code>, <code>npm run health</code>, <code>nc -z localhost 6379</code>, rule-3 flip).</td>
+    <td>After writing code, wiring data, or before committing.</td>
+  </tr>
+  <tr>
+    <td><code>track02-build</code></td>
+    <td>Locked stack, build order T0–T4, the five key-focus points, rules 3/10/11/12.</td>
+    <td>When starting or resuming build work or checking what to do next.</td>
+  </tr>
+</table>
+
+<h2>4 · opencode.json</h2>
+<p>The project config. Key parts, quoted from the actual file:</p>
+
+<pre><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md", "docs/decisions.md", "PROGRESS.md"],
+  "skills": { "paths": [".opencode/skills"] },
+  "mcp": { ... },
+  "permission": { ... }
+}</code></pre>
+
+<h3>Instructions</h3>
+<p><code>instructions</code> is an array of paths/globs added on top of <code>AGENTS.md</code>. Here it loads <code>docs/decisions.md</code> and <code>PROGRESS.md</code> every session. Add a durable rule source here rather than bloating <code>AGENTS.md</code>.</p>
+
+<h3>Permissions — git allowed, <code>.env</code> denied</h3>
+<p>Permission values are <code>allow</code> / <code>ask</code> / <code>deny</code>; with glob maps the last matching rule wins. This project:</p>
+<table>
+  <tr><th>Key</th><th>Rule</th><th>Effect</th></tr>
+  <tr><td><code>edit</code></td><td><code>*</code></td><td>allow</td></tr>
+  <tr><td><code>edit</code></td><td><code>**/.env</code>, <code>**/.env.*</code>, <code>**/*.pem</code>, <code>**/*.key</code></td><td><strong>deny</strong> — secrets never edited</td></tr>
+  <tr><td><code>bash</code></td><td><code>*</code></td><td>ask</td></tr>
+  <tr><td><code>bash</code></td><td><code>git *</code>, <code>npm *</code>, <code>npx *</code>, <code>docker *</code>, <code>graphify *</code>, <code>ls *</code></td><td>allow</td></tr>
+  <tr><td><code>bash</code></td><td><code>cat .env*</code>, <code>cat **/.env*</code></td><td><strong>deny</strong> — secrets never printed</td></tr>
+  <tr><td><code>bash</code></td><td><code>rm -rf *</code></td><td>ask</td></tr>
+</table>
+
+<h3>MCP servers</h3>
+<p>Two local MCP servers, both <code>enabled: true</code>. Environment values use <code>{env:VAR}</code> substitution — the secret never appears in the JSON. Fill the variables in <code>.env</code> (copied from <code>.env.example</code>).</p>
+<table>
+  <tr><th>Server</th><th>Launches</th><th>Env vars</th></tr>
+  <tr>
+    <td><code>falkordb</code></td>
+    <td><code>npx -y @falkordb/mcpserver@latest</code></td>
+    <td><code>FALKORDB_HOST</code>, <code>FALKORDB_PORT</code></td>
+  </tr>
+  <tr>
+    <td><code>tavily</code></td>
+    <td><code>npx -y tavily-mcp@latest</code></td>
+    <td><code>TAVILY_API_KEY</code></td>
+  </tr>
+</table>
+
+<pre><code>"mcp": {
+  "falkordb": {
+    "type": "local",
+    "command": ["npx", "-y", "@falkordb/mcpserver@latest"],
+    "enabled": true,
+    "environment": {
+      "FALKORDB_HOST": "{env:FALKORDB_HOST}",
+      "FALKORDB_PORT": "{env:FALKORDB_PORT}"
+    }
+  },
+  "tavily": {
+    "type": "local",
+    "command": ["npx", "-y", "tavily-mcp@latest"],
+    "enabled": true,
+    "environment": { "TAVILY_API_KEY": "{env:TAVILY_API_KEY}" }
+  }
+}</code></pre>
+
+<p><code>.env.example</code> declares the full variable set: <code>FALKORDB_HOST</code>, <code>FALKORDB_PORT</code> (the load-bearing graph); <code>GEMINI_API_KEY</code> (LLM); <code>TAVILY_API_KEY</code> (tool); <code>LANGSMITH_TRACING</code>, <code>LANGSMITH_API_KEY</code>, <code>LANGSMITH_PROJECT</code> (observability). Only <code>.env.example</code> is committed.</p>
+
+<h2>5 · The graphify loop — query before exploring</h2>
+<div class="habit">
+Treat the graphify <strong>graph database</strong> as durable, model-agnostic <strong>agent memory</strong> for the <em>codebase itself</em>. <strong>Query before reading files</strong>: <code>graphify query "&lt;question&gt;"</code> (broad), <code>graphify path "&lt;A&gt;" "&lt;B&gt;"</code> (shortest path), <code>graphify explain "&lt;Node&gt;"</code>. After significant changes, refresh it: <code>graphify update .</code> (incremental). Rail-map: <code>graphify-out/GRAPH_REPORT.md</code>; interactive view: <code>graphify-out/graph.html</code>.
+</div>
+<p>Why it is cross-model memory: the graph persists in the repo, not in a chat session, so a brand-new session on <em>any</em> model rebuilds context from it instead of re-reading the whole repo. This is the same reason the <strong>context budget</strong> matters — the <code>graphify-keeper</code> subagent owns keeping it current and honest (no invented edges). Rebuild it in the same commit as the change it describes.</p>
+
+<h2>6 · Restart after editing config</h2>
+<div class="callout">
+<strong>Config is loaded at startup.</strong> <code>opencode.json</code>, the agent markdown files, and <code>SKILL.md</code> files are read when opencode launches. After editing any of them, <strong>restart opencode</strong> so the running session picks up the change. Editing <code>AGENTS.md</code> or another <code>instructions</code> file also requires a restart to re-inject context.
+</div>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Grounding for every field above — <a href="https://opencode.ai/docs/config/">Config</a>, <a href="https://opencode.ai/docs/agents/">Agents</a>, <a href="https://opencode.ai/docs/skills/">Agent Skills</a>, <a href="https://opencode.ai/docs/rules/">Rules</a>, and the <a href="https://opencode.ai/config.json">JSON schema</a>. Project files: <code>AGENTS.md</code>, <code>opencode.json</code>, <code>.opencode/agent/*</code>, <code>.opencode/skills/*</code>, <code>.env.example</code>.</p>
+</div>
+
+<footer>
+  <p>Part of the GraphHacks Track 02 mission. Stuck? Ask your teacher in opencode. See <a href="../lessons/0203-configure-opencode.html">lesson 0203</a> to walk the setup.</p>
+</footer>
+</body>
+</html>

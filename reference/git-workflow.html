@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Git Workflow — GraphHacks Track 02</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Agent Memory and Coordination · Reference</p>
+<h1>Git Workflow</h1>
+<p class="lede">The commit history <em>is</em> the next session's memory: what changed, the decision and why, and the evidence. This is the command sheet for committing each verified unit and pushing it to the public remote (rule 10) without ever leaking a secret.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../lessons/0204-git-and-github-flow.html">Lesson 0204 · Git &amp; GitHub flow</a>
+  <a href="../lessons/0110-write-for-future-you.html">Lesson 0110 · Write for future-you</a>
+</nav>
+
+<h2>Command cheat</h2>
+<table>
+  <tr><th>Command</th><th>What it does</th></tr>
+  <tr><td><code>git status</code></td><td>Show the working tree and which changes are staged; your read-before-you-act check.</td></tr>
+  <tr><td><code>git add &lt;path&gt;</code> / <code>git add -A</code></td><td>Stage a path, or every tracked + untracked change, for the next commit.</td></tr>
+  <tr><td><code>git diff --cached</code></td><td>Show the staged diff — exactly what will go into the next commit (the pre-commit secret check).</td></tr>
+  <tr><td><code>git commit -m "&lt;message&gt;"</code></td><td>Record the staged snapshot with a message that briefs the next session.</td></tr>
+  <tr><td><code>git remote add origin &lt;url&gt;</code></td><td>Name your GitHub repo <code>origin</code> so push/pull can reach it.</td></tr>
+  <tr><td><code>git push -u origin main</code></td><td>Push <code>main</code> and set <code>origin/main</code> as its upstream (first push only).</td></tr>
+  <tr><td><code>git push</code></td><td>Push the current branch to its already-configured remote (every verified commit after the first).</td></tr>
+  <tr><td><code>git log --oneline -10</code></td><td>The last ten commits, one line each — what happened recently.</td></tr>
+  <tr><td><code>git log --grep="decision" -5</code></td><td>Search commit messages for a term — recover what was decided and why.</td></tr>
+</table>
+
+<h2>The commit-message template</h2>
+<p><a href="#dev">10xdev.blog</a> names the failure directly: the agent "doesn't" remember what it decided across sessions; without a durable record it "will re-derive the decision, sometimes arriving at a different answer." The fix is not sticky notes — it is the git history written as a briefing (lesson 0110). Use this shape:</p>
+<pre><code>&lt;type&gt;(&lt;area&gt;): &lt;what changed&gt;; decision: &lt;the decision&gt; (&lt;why&gt;); verify: &lt;evidence&gt;</code></pre>
+<p>Keep the word <code>decision</code> in it so <code>git log --grep="decision"</code> finds it. Two real examples from this project:</p>
+<pre><code>feat(memory): persist Turns to FalkorDB via MERGE; decision: one graph per tenant (D2); verify: npm run health = 2</code></pre>
+<pre><code>chore(repo): initialise git repo + first commit; decision: public repo is the source of truth (rule 10); verify: git log --oneline shows 1 commit</code></pre>
+<p>Each message answers the three questions a cold session asks: <strong>what changed</strong>, <strong>which decision (and why)</strong>, <strong>what evidence proved it</strong>. A commit that says only <code>wip</code> forces the next session to re-read the diff and re-derive the reasoning.</p>
+
+<h2>What to push vs. never push</h2>
+<table>
+  <tr><th>Push (tracked, part of the repo)</th><th>Never push (secret or regenerable)</th></tr>
+  <tr><td><code>src/</code> — the app source</td><td><code>.env</code>, <code>.env.*</code> — secrets live only in <code>.env</code> + the environment</td></tr>
+  <tr><td><code>lessons/</code> — one-win lessons</td><td>API keys / tokens — Gemini, Tavily, LangSmith</td></tr>
+  <tr><td><code>reference/</code> — cheatsheets &amp; playbooks</td><td><code>*.pem</code>, <code>*.key</code> — private keys</td></tr>
+  <tr><td><code>AGENTS.md</code> — locked context</td><td><code>node_modules/</code> — reinstalled from <code>package.json</code></td></tr>
+  <tr><td><code>.opencode/</code> — agents &amp; skills</td><td><code>graphify-out/cache/</code> — graphify cache, regenerated</td></tr>
+  <tr><td><code>PROGRESS.md</code> — living status</td><td><code>dist/</code>, <code>*.log</code> — build + log output</td></tr>
+  <tr><td><code>queries.cypher</code> — the Cypher you run</td><td><code>data/</code>, <code>*.rdb</code> — local FalkorDB dumps</td></tr>
+  <tr><td><code>.env.example</code> — the template, no values</td><td>anything matching <code>.gitignore</code> that got staged by force</td></tr>
+  <tr><td><code>graphify-out/graph.json</code> — durable context graph</td><td>—</td></tr>
+</table>
+<p>The split follows <code>.gitignore</code>: secrets and regenerable artifacts stay out; the durable, model-agnostic memory — source, lessons, decisions, graph.json — goes in.</p>
+
+<h2>Pre-commit secret check</h2>
+<p>Before <em>every</em> commit, look at the staged diff and confirm no secret is in it (AGENTS.md security rule):</p>
+<pre><code>git diff --cached</code></pre>
+<p>Scan the output for: a filename <code>.env</code>/<code>.env.*</code> (other than <code>.env.example</code>); anything that looks like a key or token value; a real value where <code>.env.example</code> has an empty slot (<code>GEMINI_API_KEY=</code>, <code>TAVILY_API_KEY=</code>, <code>LANGSMITH_API_KEY=</code>); <code>*.pem</code> or <code>*.key</code>. If you find one, unstage it with <code>git restore --staged &lt;path&gt;</code>, fix <code>.gitignore</code> or the file, and re-check. If a secret was already committed, rotate it — removing it later does not un-leak it.</p>
+
+<div class="habit">
+  Work in small, verified units. After a unit passes its <strong>exit criterion</strong>, commit immediately — do not batch. Push after every verified commit so the public repo stays the source of truth. Never force-push; never commit broken code as "done." If it is not verified, it is not done.
+</div>
+
+<h3>The rhythm</h3>
+<ol class="steps">
+  <li><strong>Verify</strong> — the unit passes its exit criterion (run <code>npm run health</code> after anything touching data).</li>
+  <li><strong>Inspect</strong> — <code>git status</code>, then <code>git diff --cached</code> after staging; confirm no secret is staged.</li>
+  <li><strong>Commit</strong> — <code>git add -A</code> then <code>git commit -m "&lt;template&gt;"</code>, one verified unit per commit.</li>
+  <li><strong>Push</strong> — <code>git push</code> immediately after the verified commit.</li>
+</ol>
+
+<h2>Creating the GitHub remote</h2>
+<p>The repo is already initialised locally with a first commit. Create an <strong>empty</strong> public repository on GitHub, then connect and push it. Per the <a href="#gh">GitHub quickstart</a>, create the repo in the browser (<em>New repository</em> → name → visibility <strong>Public</strong> → do <em>not</em> add a README, since you already have commits), then:</p>
+<pre><code>git remote add origin https://github.com/&lt;you&gt;/GraphHacks.git
+git branch -M main
+git push -u origin main</code></pre>
+<p><code>git push -u origin main</code> pushes <code>main</code> and records <code>origin/main</code> as its upstream, so every later push is just <code>git push</code>. (GitHub's own quickstart uses <code>git push --set-upstream origin HEAD</code>, which does the same for the current branch.) If you add a README on GitHub instead, pull first — <code>git pull --rebase origin main</code> — before pushing so the histories are not unrelated.</p>
+<p>Once pushed, the public repo is the submission artifact (rule 10): a reviewer clones it, reads the history with <code>git log</code>, and can trace every <strong>reversible decision</strong> and its evidence without asking you.</p>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Creating a repository, committing a change, and pushing to a branch. <a href="https://docs.github.com/en/get-started/quickstart/create-a-repo" id="gh">Quickstart for repositories — GitHub Docs</a>.</p>
+  <p>Git history as the agent's long-term memory: the agent "doesn't" remember past decisions and "will re-derive" them. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/" id="dev">7+ Things Every Developer Gets Wrong About AI Agents in 2026 — 10xdev.blog</a>.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. See also <a href="../reference/CURRICULUM.html">Curriculum</a> and lesson <a href="../lessons/0204-git-and-github-flow.html">0204 · Git &amp; GitHub flow</a>.</p>
+</footer>
+</body>
+</html>

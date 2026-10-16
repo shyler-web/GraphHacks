@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool Integration Map — GraphSync Track 02</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Reference</p>
+<h1>Tool Integration Map</h1>
+<p class="lede">Where every tool lives, how it connects, and what breaks if you remove it. This is the authoritative wiring for the GraphSync stack: <strong>FalkorDB</strong> (memory), <strong>Node.js + TypeScript</strong> backend, React/Vite cockpit, <strong>Gemini</strong> (LLM), <strong>Tavily</strong> (web tool), <strong>MCP</strong> (tool protocol), <strong>LangSmith</strong> (observability), and the <strong>hand-rolled orchestrator</strong> (with LangGraph as an optional swap).</p>
+
+<nav class="nav">
+  <a href="CURRICULUM.html">← Curriculum</a>
+  <a href="features.html">Feature set</a>
+  <a href="graph-schema.html">Data model</a>
+  <a href="exit-criteria.html">Exit criteria</a>
+  <a href="../lessons/0201-pick-your-stack.html">Lesson 0201</a>
+  <a href="../lessons/0202-where-every-tool-lives.html">Lesson 0202</a>
+  <a href="../GLOSSARY.md">Glossary</a>
+</nav>
+
+<div class="habit">
+Every box in the diagram below is load-bearing. If a tool can be deleted and the demo still passes, it does not belong in the stack. FalkorDB is the one box whose removal must <em>visibly break the app</em> (rule 3) — that flip is the exit criterion.
+</div>
+
+<h2>1 · Data-flow diagram</h2>
+<p>One request, top to bottom. The cockpit never talks to a tool directly: the backend owns every credential and every external call.</p>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────┐
+│  REACT / VITE COCKPIT  (src/graphsync_multi_agent_falkordb_memory_...tsx)  │
+│    • prompt input        • memory visualization   • handoff ledger         │
+│    • tenant switcher     • concurrency panel      • subgraph viewer        │
+└───────────────────────────────────┬──────────────────────────────────────┘
+                                     │  POST /api/run  { tenantId, sessionId, prompt }
+                                     ▼  (fetch / JSON)
+┌──────────────────────────────────────────────────────────────────────────┐
+│  NODE.js + TYPESCRIPT BACKEND  (Fastify/Express)                          │
+│    • runAgents()  ── hand-rolled state machine (D2)                       │
+│    • memory service ── select_graph(tenant) ── reads / MERGE writes      │
+│    • credential vault ── every key read from process.env, never the UI    │
+└───┬──────────────┬────────────────┬───────────────┬──────────────────────┘
+    │              │                │               │
+    │ falkordb npm │ Gemini SDK     │ MCP client    │ LangSmith SDK
+    ▼              ▼                ▼               ▼
+┌─────────┐  ┌──────────┐  ┌─────────────────┐  ┌────────────┐
+│FalkorDB │  │  Gemini  │  │  MCP SERVERS    │  │ LangSmith  │
+│(Docker) │  │ extract  │  │ • falkordb MCP  │  │ traces     │
+│one graph│  │ + reason │  │ • tavily MCP    │  │ every LLM  │
+│/tenant  │  │          │  │ (@falkordb/     │  │ + tool call│
+│Cypher + │  │          │  │  mcpserver,     │  │            │
+│vectors  │  │          │  │  tavily-mcp)    │  │            │
+└────┬────┘  └────┬─────┘  └────────┬────────┘  └─────┬──────┘
+     │            │                 │                 │
+     │   MERGE writes / read subgraph                   │
+     │            └────────┬────────┘                 │
+     ▼                     ▼                          │
+┌──────────────────────────────────────────┐          │
+│  ONE CONNECTED MEMORY GRAPH  (D5)        │          │
+│  Episodic ──▶ Semantic ──▶ Procedural    │          │
+│  Turn   Entity/Fact   Workflow/Step      │          │
+│  + Coordination: Agent ──HANDED_TO──▶ Agent │       │
+└───────────────────┬──────────────────────┘          │
+                    │  subgraph + answer + sources     │
+                    ▼                                  ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│  RESPONSE  →  back to the cockpit:  { answer, subgraph, handoffs, trace }  │
+└──────────────────────────────────────────────────────────────────────────┘</code></pre>
+
+<h2>2 · Tool-by-tool map</h2>
+<p>Read each row as: what it does <em>here</em>, how it connects, and the failure it prevents — the "remove it" column is the honesty check.</p>
+
+<table>
+  <tr><th>Layer</th><th>Tool</th><th>What it does here</th><th>How it connects</th><th>If you remove it, what breaks</th></tr>
+  <tr>
+    <td>Frontend</td><td><strong>React + Vite + TS</strong></td>
+    <td>The cockpit: prompt box, live memory visualization, handoff ledger, tenant switcher, concurrency panel. Wired to the graph (feature 10).</td>
+    <td>Dev: <code>npm run dev</code>; prod build via <code>npm run build</code>. Calls backend over <code>POST /api/run</code>.</td>
+    <td>No visual proof for a judge — every claim becomes an explanation instead of a demo.</td>
+  </tr>
+  <tr>
+    <td>Backend</td><td><strong>Node.js + TS</strong></td>
+    <td>Owns agents, the memory service, and all credentials. The only component that reads <code>process.env</code>.</td>
+    <td>Fastify/Express HTTP server; official <code>falkordb</code> npm client.</td>
+    <td>Nothing connects — the browser would need your API keys. Deletes the whole security boundary.</td>
+  </tr>
+  <tr>
+    <td>Orchestration</td><td><strong>Hand-rolled state machine</strong> (D2)</td>
+    <td>Runs the 4-agent flow step by step; state persisted in FalkorDB. Behind the <code>runAgents()</code> boundary.</td>
+    <td>Plain TS <code>while</code>/switch loop; each step writes a Turn/Handoff via the memory service.</td>
+    <td>The flow is opaque and undebuggable — you lose the ability to trace "step 6 returned malformed JSON".</td>
+  </tr>
+  <tr>
+    <td>Orchestration<br>(optional)</td><td><strong>LangGraph / LangGraph.js</strong></td>
+    <td>Swap-in only if you need cycles + human-in-the-loop + time-travel (D2 revisit trigger). FalkorDB is the checkpointer.</td>
+    <td>Replace the body of <code>runAgents()</code>; contract unchanged (lesson 0105).</td>
+    <td>Nothing right now — it is a <em>choice</em>, not a dependency. Adopting it early is the #1 beginner trap.</td>
+  </tr>
+  <tr>
+    <td>Memory</td><td><strong>FalkorDB</strong> (Docker)</td>
+    <td>The load-bearing context layer: episodic, semantic and procedural memory in one connected graph, one named graph per tenant.</td>
+    <td><code>falkordb</code> npm client → <code>db.select_graph("tenant:&lt;id&gt;")</code>; Cypher with <code>MERGE</code>.</td>
+    <td><strong>The whole submission.</strong> Stop FalkorDB → the app must error, not silently keep working (rule 3).</td>
+  </tr>
+  <tr>
+    <td>LLM</td><td><strong>Gemini</strong></td>
+    <td>Extraction (turn → Entity/Fact) and reasoning (plan the next step, pick a tool).</td>
+    <td>Backend calls the Gemini SDK with <code>GEMINI_API_KEY</code>; every call is traced.</td>
+    <td>No extraction and no planning — the graph stops growing and the agent can't decide what to do.</td>
+  </tr>
+  <tr>
+    <td>Tool protocol</td><td><strong>MCP</strong></td>
+    <td>The standard plug that exposes graph tools and web search to the agent as callable tools.</td>
+    <td>Backend runs an MCP client; servers launched via <code>npx</code> (see §4).</td>
+    <td>Tools must be hand-wired per provider — the "build once, integrate everywhere" port is gone.</td>
+  </tr>
+  <tr>
+    <td>Tool</td><td><strong>FalkorDB MCP server</strong></td>
+    <td>Lets the agent query/manage/explore the graph through MCP (<code>query_graph</code>, read-only mode).</td>
+    <td><code>npx -y @falkordb/mcpserver@latest</code> with <code>FALKORDB_HOST/PORT/USERNAME/PASSWORD</code>.</td>
+    <td>Agent falls back to direct Cypher only — no standard tool surface, but the graph still works.</td>
+  </tr>
+  <tr>
+    <td>Tool</td><td><strong>Tavily</strong></td>
+    <td>Web-search tool the agent calls when it needs current, external facts to enrich a turn.</td>
+    <td><code>npx -y tavily-mcp@latest</code> with <code>TAVILY_API_KEY</code>; or remote MCP URL.</td>
+    <td>Agent is confined to the graph — new external facts can't be discovered or grounded.</td>
+  </tr>
+  <tr>
+    <td>Observability</td><td><strong>LangSmith</strong> (D3)</td>
+    <td>Traces every LLM call and tool call so async failures are debuggable by trace.</td>
+    <td>Env vars + SDK; runs/lines appear in the LangSmith project (see §4).</td>
+    <td>Debugging reverts to guesswork — the only tractable path for a solo dev on an async loop.</td>
+  </tr>
+</table>
+
+<div class="win">If a judge pulls one wire, exactly one thing should fail. FalkorDB's wire must fail <em>loudest</em>.</div>
+
+<h2>3 · Runtime sequence for one prompt</h2>
+<p>The numbered path from keystroke to subgraph — this is the sequence your demo video should make visible.</p>
+<ol class="steps">
+  <li><strong>UI POST.</strong> Cockpit sends <code>POST /api/run</code> with <code>{ tenantId, sessionId, userId, prompt }</code>. The tenant selects the FalkorDB graph key.</li>
+  <li><strong>Backend accepts.</strong> Node/TS validates input, opens <code>select_graph("tenant:&lt;tenantId&gt;")</code>, and starts a LangSmith trace for the run.</li>
+  <li><strong>LLM plan.</strong> Gemini reads the recent episodic context (previous Turns) plus the prompt and returns a plan: extract, answer, or call a tool.</li>
+  <li><strong>FalkorDB reads.</strong> The memory service recalls prior Turns, Topics and Entities for this user/session — the <strong>GraphRAG</strong> context, a traversed subgraph, not loose chunks.</li>
+  <li><strong>FalkorDB writes (MERGE).</strong> The new user Turn is written idempotently: <code>(:User)-[:PARTICIPATED]-&gt;(:Turn)-[:IN_SESSION]-&gt;(:Session)</code> and <code>(:Turn)-[:ABOUT]-&gt;(:Topic)</code>. Gemini-extracted Entities/Facts are MERGE'd and linked with <code>:MENTIONS</code> / <code>:HAS_FACT</code> / <code>:DERIVED_FROM</code>.</li>
+  <li><strong>Tool call.</strong> If the plan needs external facts, the agent calls Tavily over MCP (web search) and/or the FalkorDB MCP server (graph query). The result is traced in LangSmith and attached to the turn.</li>
+  <li><strong>Agent reasoning / handoff.</strong> The orchestrator may pass state to the next agent; it writes a <code>:Handoff</code> node with <code>:FROM_AGENT</code>, <code>:TO_AGENT</code>, <code>:HANDED_TO {at}</code>, and <code>:TARGETS</code> — the shared-state ledger.</li>
+  <li><strong>Procedural remember.</strong> A successful strategy is stored as a <code>:Workflow</code> with <code>:START</code>/<code>:NEXT_STEP</code> and <code>:LEARNED_FROM</code>, so it can be replayed, not re-derived.</li>
+  <li><strong>Response + subgraph.</strong> The backend returns <code>{ answer, subgraph, sources, handoffs, traceId }</code>; the cockpit renders the answer, the graph delta, and the handoff timeline.</li>
+</ol>
+
+<div class="callout">
+<strong>Why the graph is the star (D5).</strong> Steps 4–8 all read or write the <em>same</em> connected graph. Episodic (Turn) links to semantic (Entity/Fact) links to procedural (Workflow) — a <strong>three-tier memory model</strong>, not three demos. Removing FalkorDB breaks steps 4, 5, 7 and 8 at once.
+</div>
+
+<h2>4 · Configuration snippets</h2>
+
+<h3>4.1 FalkorDB npm client — connect and select a graph</h3>
+<pre><code>// npm i falkordb
+import { FalkorDB } from "falkordb";
+
+const db = await FalkorDB.connect({
+  socket: {
+    host: process.env.FALKORDB_HOST ?? "localhost",
+    port: Number(process.env.FALKORDB_PORT ?? 6379),
+  },
+  username: process.env.FALKORDB_USERNAME || undefined,
+  password: process.env.FALKORDB_PASSWORD || undefined,
+});
+
+// one named graph per tenant  (multi-graph / multi-tenant topology)
+const graph = db.select_graph(`tenant:${tenantId}`);
+
+// idempotent memory write
+await graph.query(
+  `MERGE (u:User {id:$user_id})
+   CREATE (t:Turn {id:$turn_id, timestamp:$ts, role:$role, text:$text})
+   CREATE (u)-[:PARTICIPATED]->(t)`,
+  { params: { user_id, turn_id, ts, role, text } }
+);</code></pre>
+
+<h3>4.2 Health check — the one command that proves FalkorDB is load-bearing</h3>
+<pre><code>// npm run health  →  prints MATCH (n) RETURN count(n)
+const res = await graph.query("MATCH (n) RETURN count(n)");
+console.log("nodes:", res.data[0][0]);      // stop FalkorDB → this throws</code></pre>
+
+<h3>4.3 FalkorDB MCP server entry</h3>
+<pre><code>{
+  "mcpServers": {
+    "falkordb": {
+      "command": "npx",
+      "args": ["-y", "@falkordb/mcpserver@latest"],
+      "env": {
+        "FALKORDB_HOST": "localhost",
+        "FALKORDB_PORT": "6379",
+        "FALKORDB_USERNAME": "",
+        "FALKORDB_PASSWORD": ""
+      }
+    }
+  }
+}</code></pre>
+
+<h3>4.4 Tavily MCP server entry</h3>
+<pre><code>{
+  "mcpServers": {
+    "tavily-mcp": {
+      "command": "npx",
+      "args": ["-y", "tavily-mcp@latest"],
+      "env": { "TAVILY_API_KEY": "tvly-YOUR_API_KEY" }
+    }
+  }
+}</code></pre>
+<p>Or connect to Tavily's remote MCP server URL directly (no local install): <code>https://mcp.tavily.com/mcp/?tavilyApiKey=&lt;key&gt;</code>. The tools exposed are <code>tavily-search</code> and <code>tavily-extract</code>.</p>
+
+<h3>4.5 <code>.env.example</code> keys (names only — never commit real values)</h3>
+<pre><code># FalkorDB
+FALKORDB_HOST=localhost
+FALKORDB_PORT=6379
+FALKORDB_USERNAME=
+FALKORDB_PASSWORD=
+
+# LLM
+GEMINI_API_KEY=
+
+# Tools
+TAVILY_API_KEY=
+
+# Observability (LangSmith)
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=
+LANGSMITH_PROJECT=graphsync-track02
+
+# Backend
+PORT=3000</code></pre>
+<div class="callout">
+<strong>Security.</strong> Never read, print, or commit <code>.env</code> / <code>.env.*</code> (except <code>.env.example</code>). Secrets live only in <code>.env</code> + the environment; reference them via <code>process.env</code>. Before any commit, confirm nothing secret is staged (<code>git diff --cached</code>).
+</div>
+
+<h2>5 · What else you need</h2>
+<table>
+  <tr><th>Artifact</th><th>Why</th><th>Where it lives</th></tr>
+  <tr><td><strong>Docker Compose</strong> (D4)</td><td>One-command reproducible demo: FalkorDB + backend + frontend. Local-first removes a whole class of network/env failures and protects the deadline.</td><td><code>docker-compose.yml</code>; FalkorDB image <code>falkordb/falkordb:latest</code> (ports 6379, 3000).</td></tr>
+  <tr><td><strong>Health check</strong></td><td>The observable proof that the graph does real work; run after every change that touches data.</td><td><code>npm run health</code> → <code>MATCH (n) RETURN count(n)</code>.</td></tr>
+  <tr><td><strong>queries.cypher</strong></td><td>Rule 10 requires the real Cypher the product depends on, as a standalone artifact.</td><td>Repo root; one labeled block per memory operation (write turn, write fact, record handoff, recall subgraph).</td></tr>
+  <tr><td><strong>Demo video</strong></td><td>Shows the working project, including the FalkorDB-off failure flip.</td><td>Linked from the README.</td></tr>
+  <tr><td><strong>Deployment</strong></td><td>Rule 10 accepts a live deployment <em>or</em> complete local setup instructions.</td><td>Local Docker Compose first; cloud only after the local demo is proven (D4).</td></tr>
+  <tr><td><strong>README + data model</strong></td><td>The write-up a judge grades; must contain the graph data model and AI-disclosure (rule 11).</td><td>Paste <a href="graph-schema.html">the data model</a> into the README.</td></tr>
+</table>
+
+<div class="drill">
+Pick one row in §2 and physically comment it out. If the demo still passes its exit criterion, that tool is not yet load-bearing — either wire it for real or cut it. Repeat until the only thing that breaks everything is FalkorDB.
+</div>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Client libraries and packages — <a href="https://docs.falkordb.com/getting-started/clients">FalkorDB client libraries</a> (<code>falkordb</code> npm = <em>falkordb-ts</em>, RESP + Bolt).</p>
+  <p>MCP server config, <code>npx -y @falkordb/mcpserver@latest</code>, and available tools — <a href="https://docs.falkordb.com/genai-tools/mcpserver/quickstart.html">FalkorDB MCP Server Quick Start</a>.</p>
+  <p>Tavily MCP, <code>npx -y tavily-mcp@latest</code>, <code>tavily-search</code>/<code>tavily-extract</code>, remote URL — <a href="https://docs.tavily.com/documentation/mcp">Tavily MCP Server docs</a>.</p>
+  <p>What MCP is and why it is "USB-C for AI applications" — <a href="https://modelcontextprotocol.io/docs/getting-started/intro">Model Context Protocol intro</a>.</p>
+  <p>Traces, projects and API keys — <a href="https://docs.smith.langchain.com/">LangSmith Observability</a>.</p>
+  <p>Companion: <a href="CURRICULUM.html">Track 02 curriculum</a> · <a href="features.html">feature set</a> · <a href="graph-schema.html">graph data model</a> · <a href="exit-criteria.html">exit criteria</a> · <a href="../lessons/0201-pick-your-stack.html">lesson 0201</a> · <a href="../lessons/0202-where-every-tool-lives.html">lesson 0202</a>.</p>
+</div>
+
+<footer>
+  <p>GraphSync · Track 02 — Agent Memory and Coordination. Every claim cites a source; terms match <a href="../GLOSSARY.md">GLOSSARY.md</a>. Stuck? Ask your teacher in opencode.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0204 — Git &amp; GitHub as Agent Memory</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0204 · Toolchain &amp; Setup</p>
+<h1>Git &amp; GitHub as Agent Memory</h1>
+<p class="lede">Submission rule 10 requires a <strong>public repo</strong>. But the repo is more than a delivery box: the commit history is the one memory every future session — human or agent — can read from cold.</p>
+
+<p class="win">By the end you can <em>commit a verified unit and push it to a public GitHub remote, after a secret check</em>, evidenced by <em><code>git log --oneline</code> showing your commit and <code>git push</code> reporting the branch is up to date</em>.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../reference/git-workflow.html">Git workflow</a>
+  <a href="0203-.html">Prev</a>
+  <a href="0205-.html">Next →</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>You are solo, switching between the <strong>graph database</strong>, the <strong>Cypher</strong>, the cockpit UI, and deployment. <a href="#dev">10xdev.blog</a> names the core failure: developers "think the AI remembers what it decided. It doesn't" — every new session "starts cold" and "will re-derive the decision, sometimes arriving at a different answer." The fix is not notes but <strong>git as the agent's long-term memory</strong>: commit messages carrying <em>what was built, the decision, why, and the exit evidence</em>.</p>
+<p>Lesson <a href="0110-write-for-future-you.html">0110</a> is the theory — write every commit as a briefing for a capable teammate with no context. This lesson is the mechanics: the exact commands, what to push, and the safety check that keeps secrets out of a public repo.</p>
+
+<div class="habit">
+  Work in small, verified units. The instant a unit passes its <strong>exit criterion</strong>, commit and push — do not batch. The history is the briefing; an unpushed commit is not yet memory the submission can see.
+</div>
+
+<h2>The idea</h2>
+<p>Git has three stages: your working files, the <strong>staging area</strong> (<code>git add</code>), and the <strong>commit</strong> (a snapshot). Then a <strong>remote</strong> — the GitHub copy — receives it with <code>git push</code>. GitHub's quickstart is the canonical path: create the repo, commit, and <code>git push --set-upstream origin HEAD</code> (equivalent to <code>git push -u origin main</code>), which links your local branch to the remote so later pushes are just <code>git push</code> (<a href="#gh">GitHub Quickstart</a>).</p>
+
+<pre><code>git init                       # start history in this folder (already done)
+git add <paths>                # stage exactly what changed
+git commit -m "…briefing…"     # snapshot with a message for future-you
+# create the repo on github.com (public), then:
+git remote add origin git@github.com:&lt;you&gt;/&lt;repo&gt;.git
+git push -u origin main        # first push; -u remembers the remote</code></pre>
+
+<p>Write the commit message in the shape 0110 taught — <strong>what changed · the decision + why · the evidence</strong>:</p>
+
+<div class="prompt-diff">
+  <div class="weak">
+    <p><code>commit: "wip"</code> — no decision, no evidence. Next session re-derives everything.</p>
+  </div>
+  <div class="senior">
+    <p><code>feat(memory): persist Turns to FalkorDB via MERGE; decision: one graph per tenant (D2); verify: npm run health = 2</code></p>
+  </div>
+</div>
+
+<h3>What to push, what to never push</h3>
+<table>
+  <tr><th>Push (the source of truth)</th><th>Never push (ignored by .gitignore)</th></tr>
+  <tr>
+    <td>source (<code>src/</code>), <code>lessons/</code>, <code>reference/</code>, <code>AGENTS.md</code>, <code>.opencode/</code>, <code>PROGRESS.md</code>, <code>queries.cypher</code>, <code>.env.example</code>, <code>graphify-out/graph.json</code></td>
+    <td><code>.env</code> and any key/token, <code>node_modules/</code>, the graphify cache (<code>graphify-out/cache/</code>), <code>*.key</code>/<code>*.pem</code>, build output</td>
+  </tr>
+</table>
+<p><code>.gitignore</code> is a file listing paths git pretends not to see — it already excludes <code>.env</code> and <code>.env.*</code> (while keeping <code>!.env.example</code>) and the graphify cache. But <code>.gitignore</code> only stops <em>untracked</em> files. If a secret was ever added, it is still tracked. So run the secret check before every commit:</p>
+<pre><code>git diff --cached      # review exactly what is staged — no keys, no .env</code></pre>
+
+<div class="callout">
+  <strong>Three hard rules.</strong> Commit per verified unit; push after each verified commit (the public repo is rule 10's source of truth, so keep it current). <strong>Never force-push</strong> — it erases history a future session depends on. <strong>Never commit broken code as "done"</strong> — if it is not verified, it is not finished.
+</div>
+
+<div class="quiz" data-answer="0" data-explain=".env (and any key or token) must never be pushed — it is the secret that runs your FalkorDB, LLM, and tool calls. node_modules and the graphify cache are large and regenerable, but only secrets are a security breach. .env.example is safe: it has empty values.">
+  <p class="q">What must never be pushed to the public repo?</p>
+  <button type="button">Your <code>.env</code> file and any real API key or token</button>
+  <button type="button"><code>node_modules/</code></button>
+  <button type="button"><code>.env.example</code></button>
+</div>
+
+<div class="drill">
+  <p><strong>Commit and push one verified unit, safely.</strong></p>
+  <ol class="steps">
+    <li>Confirm a unit passed its exit criterion. Check status: <code>git status</code>.</li>
+    <li>Stage it: <code>git add &lt;paths&gt;</code> (stage only what you intend).</li>
+    <li>Secret check: <code>git diff --cached</code>. Expected: the diff shows your source and docs, and <strong>no</strong> <code>.env</code>, keys, or tokens.</li>
+    <li>Commit with a briefing message: <code>git commit -m "feat(memory): … what / decision + why / verify: …"</code>. Expected: one commit, with your message on the first line.</li>
+    <li>Push: <code>git push</code>. Expected: <code>Everything up-to-date</code> or a summary of the uploaded objects, with no error.</li>
+    <li>Verify memory is visible: <code>git log --oneline -10</code>. Expected: your commit at the top.</li>
+  </ol>
+</div>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Create a repository, commit, and push the first change (<code>git push --set-upstream origin HEAD</code>). <a href="https://docs.github.com/en/get-started/quickstart/create-a-repo" id="gh">Quickstart for repositories — GitHub Docs</a>.</p>
+  <p>Git as the agent's long-term memory: commit messages as briefings, the four-command session-start protocol, and why an agent "will re-derive the decision" each session. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/" id="dev">7+ Things Every Developer Gets Wrong About AI Agents in 2026 — 10xdev.blog</a>.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
