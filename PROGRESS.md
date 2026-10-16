@@ -11,7 +11,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 | T0.1 | `git init` + first commit | `git log --oneline -1` shows the foundation | ✅ done |
 | T0.2 | Remove root↔`src/` duplicate | `grep -rl INITIAL_TENANTS src/` → one path | ✅ done |
 | T0.3 | ALWAYS block in `AGENTS.md` | rules + goal/exit + locked decisions + health present | ✅ done |
-| T1.1 | Run FalkorDB (Docker) | `nc -z localhost 6379` exits 0 | ⬜ todo |
+| T1.1 | Run FalkorDB (Docker) | `nc -z localhost 6379` exits 0 | ✅ done |
 | T1.2 | Debug drill on "6379 refused" | Expected/Observed/Repro + 3 hypotheses | ⬜ todo |
 | T1.3 | `npm run health` | prints `MATCH (n) RETURN count(n)` | ⬜ todo |
 | T1.4 | `npm install falkordb`; write+read one node | node read back by id | ⬜ todo |
@@ -30,7 +30,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 
 ## Blockers / notes
 
-- (none yet)
+- FalkorDB running: `docker run -d --name falkordb -p 6379:6379 -p 3000:3000 falkordb/falkordb:latest` (container `falkordb`, Browser UI on `:3000`, Redis port `6379`). Restart with `docker start falkordb`.
 
 ## Recent commits
 
