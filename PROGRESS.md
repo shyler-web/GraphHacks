@@ -16,7 +16,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 | T1.3 | `npm run health` | prints `MATCH (n) RETURN count(n)` | ✅ done |
 | T1.4 | `npm install falkordb`; write+read one node | node read back by id | ✅ done |
 | T2.1 | memory-service contract + decision record | typed signatures + schema decision | ✅ done |
-| T2.2 | Episodic: write_turn / recall_turns | 2 messages → 2 Turn nodes in order | ⬜ todo |
+| T2.2 | Episodic: write_turn / recall_turns | 2 messages → 2 Turn nodes in order | ✅ done |
 | T2.3 | Semantic: facts & entities | message builds queryable Entity/Fact nodes | ⬜ todo |
 | T2.4 | Procedural: workflow replay | stored Workflow fetched and re-run | ⬜ todo |
 | T3.1 | Handoff ledger | agent B reads A's HANDED_TO | ⬜ todo |
@@ -32,6 +32,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 
 - FalkorDB running: `docker run -d --name falkordb -p 6379:6379 -p 3000:3000 falkordb/falkordb:latest` (container `falkordb`, Browser UI on `:3000`, Redis port `6379`). Restart with `docker start falkordb`.
 - **Risk:** `falkordb@6.8.0` declares `engines.node >=22` but the host runs Node **v18.19.1**. Install prints `EBADENGINE`; the client was smoke-tested and works (`RETURN 1`, `MATCH (n) RETURN count(n)`, MERGE write/read all OK). Revisit if a Node-22-only API is hit or on a clean install elsewhere.
+- **T2.2 evidence (uncommitted):** `server/memory/service.ts` (episodic `writeTurn`/`recallTurns`, other methods stubbed) + `scripts/verify-t2.2.ts`. `npm run typecheck` exit 0; `npm run verify:t2.2` prints `turns=2 order=user,agent` exit 0 (idempotent on re-run); `npm run health` exit 0. Edges confirmed: `(User)-[:PARTICIPATED]->(Turn)-[:IN_SESSION]->(Session)` and `(Agent)-[:PRODUCED]->(Turn)`.
 
 ## Recent commits
 

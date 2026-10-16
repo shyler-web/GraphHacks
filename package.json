@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "health": "node scripts/health.mjs"
+    "health": "node scripts/health.mjs",
+    "typecheck": "tsc --noEmit",
+    "verify:t2.2": "tsx scripts/verify-t2.2.ts"
   },
   "dependencies": {
     "falkordb": "^6.8.0",
@@ -16,12 +18,14 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^18.19.130",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
+    "tsx": "^4.23.15",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }
