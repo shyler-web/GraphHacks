@@ -13,8 +13,8 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 | T0.3 | ALWAYS block in `AGENTS.md` | rules + goal/exit + locked decisions + health present | ✅ done |
 | T1.1 | Run FalkorDB (Docker) | `nc -z localhost 6379` exits 0 | ✅ done |
 | T1.2 | Debug drill on "6379 refused" | Expected/Observed/Repro + 3 hypotheses | ✅ done |
-| T1.3 | `npm run health` | prints `MATCH (n) RETURN count(n)` | ⬜ todo |
-| T1.4 | `npm install falkordb`; write+read one node | node read back by id | ⬜ todo |
+| T1.3 | `npm run health` | prints `MATCH (n) RETURN count(n)` | ✅ done |
+| T1.4 | `npm install falkordb`; write+read one node | node read back by id | ✅ done |
 | T2.1 | memory-service contract + decision record | typed signatures + schema decision | ⬜ todo |
 | T2.2 | Episodic: write_turn / recall_turns | 2 messages → 2 Turn nodes in order | ⬜ todo |
 | T2.3 | Semantic: facts & entities | message builds queryable Entity/Fact nodes | ⬜ todo |
@@ -31,6 +31,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 ## Blockers / notes
 
 - FalkorDB running: `docker run -d --name falkordb -p 6379:6379 -p 3000:3000 falkordb/falkordb:latest` (container `falkordb`, Browser UI on `:3000`, Redis port `6379`). Restart with `docker start falkordb`.
+- **Risk:** `falkordb@6.8.0` declares `engines.node >=22` but the host runs Node **v18.19.1**. Install prints `EBADENGINE`; the client was smoke-tested and works (`RETURN 1`, `MATCH (n) RETURN count(n)`, MERGE write/read all OK). Revisit if a Node-22-only API is hit or on a clean install elsewhere.
 
 ## Recent commits
 
