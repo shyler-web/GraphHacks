@@ -78,10 +78,10 @@
     "semantic_hash": "31d59b09a789ca8b81998740da0ad8b0"
   },
   "NOTES.md": {
-    "mtime": 1792065831.37372,
-    "seen": 1792126875.8707178,
-    "ast_hash": "6cca9b24c84fe055139d5cc3f7e27a8a",
-    "semantic_hash": "6cca9b24c84fe055139d5cc3f7e27a8a"
+    "mtime": 1792128150.6955173,
+    "seen": 1792128154.6044507,
+    "ast_hash": "d7fad5fa54f2fd8d1b3e37a315be190c",
+    "semantic_hash": ""
   },
   "RESOURCES.md": {
     "mtime": 1792077652.43368,
@@ -228,16 +228,16 @@
     "semantic_hash": "e439a097f00189ceabc6bc9c72adfcb3"
   },
   "lessons/0110-write-for-future-you.html": {
-    "mtime": 1792077567.391609,
-    "seen": 1792126875.8707325,
-    "ast_hash": "d6333a1bc424a01a5df10dfad8ba863a",
-    "semantic_hash": "d6333a1bc424a01a5df10dfad8ba863a"
+    "mtime": 1792127918.0770953,
+    "seen": 1792127924.426102,
+    "ast_hash": "7b67c7d3c992ca1c35b3c4a76e841015",
+    "semantic_hash": ""
   },
   "reference/CURRICULUM.html": {
-    "mtime": 1792101501.9838634,
-    "seen": 1792126875.870733,
-    "ast_hash": "0739f86cb699f08321b134f3d49949a6",
-    "semantic_hash": "0739f86cb699f08321b134f3d49949a6"
+    "mtime": 1792128146.703873,
+    "seen": 1792128154.60448,
+    "ast_hash": "6a429eeca8b6d96a1f057f8e41d3eed6",
+    "semantic_hash": ""
   },
   "reference/concurrency.html": {
     "mtime": 1792065998.3236458,
@@ -276,15 +276,33 @@
     "semantic_hash": "cfa23645fe7de03594e53e8ef84decd1"
   },
   "reference/track02-checklist.html": {
-    "mtime": 1792065968.435923,
-    "seen": 1792126875.8707416,
-    "ast_hash": "6d8a5c620d80c07289078048c52d2f8a",
-    "semantic_hash": "6d8a5c620d80c07289078048c52d2f8a"
+    "mtime": 1792128150.0665715,
+    "seen": 1792128154.6044884,
+    "ast_hash": "6bb738ec4feedc360f1002bcb0776df4",
+    "semantic_hash": ""
   },
   "architecture-diagram.svg": {
     "mtime": 1792105464.4197345,
     "seen": 1792126875.8707423,
     "ast_hash": "632b58f2aa95a1763e9aee38b5acde7e",
     "semantic_hash": "632b58f2aa95a1763e9aee38b5acde7e"
+  },
+  "AGENTS.md": {
+    "mtime": 1792126900.0002089,
+    "seen": 1792127924.4260776,
+    "ast_hash": "e37cb951c25842fb1aae911ade4d8b0a",
+    "semantic_hash": ""
+  },
+  "lessons/0111-capstone-the-engineers-prompt.html": {
+    "mtime": 1792127911.7993536,
+    "seen": 1792127924.426103,
+    "ast_hash": "630b1836e8ff5313f30a78b3c508e375",
+    "semantic_hash": ""
+  },
+  "reference/insight.html": {
+    "mtime": 1792128146.5188901,
+    "seen": 1792128154.604486,
+    "ast_hash": "97e32fb777974723cea81986c15cbcbc",
+    "semantic_hash": ""
   }
 }
