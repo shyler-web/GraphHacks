@@ -51,3 +51,11 @@ One record per expensive-to-reverse decision. Format per lesson 0108: **Decision
 - **Alternatives:** three separate stores (looks like three demos, loses the winning move); vector-only memory (no typed edges, no explainable path); schema-in-UI only (no testable boundary, queries drift); no contract — ad-hoc queries per feature (fastest to start, most expensive to keep consistent).
 - **Reversibility:** Cheap-ish. The contract is a document plus types; implementations sit behind the `MemoryService` boundary and can be swapped. Changing the *schema* itself is expensive (see D5).
 - **Revisit if:** a key-focus point can't be expressed through these signatures, a vector/embedding requirement forces a different recall path, or the TS runtime choice (Node 18 vs a TS runner) makes the type-only contract impractical to implement.
+
+## D7 · TypeScript execution & backend layout
+
+- **Decision:** Run the backend/memory TypeScript directly with **`tsx`** (a dev dependency) on the host's Node 18; add `npm run typecheck` = `tsc --noEmit` covering `src/`, `server/`, `scripts/`, and `docs/contracts/`; backend and memory code live under **`server/`**. The canonical memory types remain at `docs/contracts/memory-service.types.ts` (D6) and are imported by the implementation.
+- **Why:** The host is Node v18.19.1 and `falkordb@6.8.0` only *warns* (`engines.node >= 22`); it installed and ran. `tsx` gives real `.ts` with no build step and the fastest edit-run loop, matching D1 (Node/TS) and the deadline. Because `tsx` strips types without checking them, a separate `tsc --noEmit` (`npm run typecheck`) is added so the contract is still enforced.
+- **Alternatives:** `.mjs` + JSDoc types (no new dependency, weaker/less idiomatic typing); `tsc` compile → run `.js` (enforces types, but adds a build step to every run); upgrade Node to 22+ (built-in type stripping, but environment churn mid-hackathon).
+- **Reversibility:** Easy. The runner and the typecheck command are thin wrappers; the code stays `.ts`.
+- **Revisit if:** we upgrade to Node 22+ (built-in type stripping removes the need for `tsx`), or we need a production bundle/build for the backend.
