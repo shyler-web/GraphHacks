@@ -15,7 +15,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 | T1.2 | Debug drill on "6379 refused" | Expected/Observed/Repro + 3 hypotheses | ✅ done |
 | T1.3 | `npm run health` | prints `MATCH (n) RETURN count(n)` | ✅ done |
 | T1.4 | `npm install falkordb`; write+read one node | node read back by id | ✅ done |
-| T2.1 | memory-service contract + decision record | typed signatures + schema decision | ⬜ todo |
+| T2.1 | memory-service contract + decision record | typed signatures + schema decision | ✅ done |
 | T2.2 | Episodic: write_turn / recall_turns | 2 messages → 2 Turn nodes in order | ⬜ todo |
 | T2.3 | Semantic: facts & entities | message builds queryable Entity/Fact nodes | ⬜ todo |
 | T2.4 | Procedural: workflow replay | stored Workflow fetched and re-run | ⬜ todo |
