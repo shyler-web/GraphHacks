@@ -43,3 +43,11 @@ One record per expensive-to-reverse decision. Format per lesson 0108: **Decision
 - **Alternatives:** three separate stores; vector-only memory.
 - **Reversibility:** Expensive (schema).
 - **Revisit if:** a key-focus point can't be expressed in one graph.
+
+## D6 · Memory-service contract & schema location
+
+- **Decision:** All three memory tiers plus coordination go through one `MemoryService` interface, defined by a language-agnostic contract at `docs/contracts/memory-service.md` with compilable TypeScript types at `docs/contracts/memory-service.types.ts`. Every call takes `tenant` first and resolves to the graph key `tenant:<tenantId>` (D5). The node/edge vocabulary is fixed to the minimal set in `reference/graph-schema.html`; ambiguities in that reference are resolved explicitly in the contract's §5. Implementation lands in T2.2–T2.4; T2.1 is design only.
+- **Why:** A single typed boundary lets each tier be built and verified independently (T2.2 episodic, T2.3 semantic, T2.4 procedural) while keeping the "one connected graph" story intact. Writing the contract before the queries prevents ad-hoc Cypher from drifting from the schema and gives the builder an exit criterion per function. It also keeps the service language-agnostic, so D1's later-port escape hatch stays open.
+- **Alternatives:** three separate stores (looks like three demos, loses the winning move); vector-only memory (no typed edges, no explainable path); schema-in-UI only (no testable boundary, queries drift); no contract — ad-hoc queries per feature (fastest to start, most expensive to keep consistent).
+- **Reversibility:** Cheap-ish. The contract is a document plus types; implementations sit behind the `MemoryService` boundary and can be swapped. Changing the *schema* itself is expensive (see D5).
+- **Revisit if:** a key-focus point can't be expressed through these signatures, a vector/embedding requirement forces a different recall path, or the TS runtime choice (Node 18 vs a TS runner) makes the type-only contract impractical to implement.
