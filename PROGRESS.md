@@ -12,7 +12,7 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 | T0.2 | Remove root↔`src/` duplicate | `grep -rl INITIAL_TENANTS src/` → one path | ✅ done |
 | T0.3 | ALWAYS block in `AGENTS.md` | rules + goal/exit + locked decisions + health present | ✅ done |
 | T1.1 | Run FalkorDB (Docker) | `nc -z localhost 6379` exits 0 | ✅ done |
-| T1.2 | Debug drill on "6379 refused" | Expected/Observed/Repro + 3 hypotheses | ⬜ todo |
+| T1.2 | Debug drill on "6379 refused" | Expected/Observed/Repro + 3 hypotheses | ✅ done |
 | T1.3 | `npm run health` | prints `MATCH (n) RETURN count(n)` | ⬜ todo |
 | T1.4 | `npm install falkordb`; write+read one node | node read back by id | ⬜ todo |
 | T2.1 | memory-service contract + decision record | typed signatures + schema decision | ⬜ todo |
