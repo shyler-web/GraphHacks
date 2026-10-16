@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0012 — Shipping the Winning Submission</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0012 · Track 02 — Agent Memory and Coordination</p>
+<h1>Shipping the Winning Submission</h1>
+<p class="lede">Turn the working project into a complete, submittable packet that satisfies rule 10 item-for-item — and that a judge can run, watch, and believe in under five minutes.</p>
+
+<p class="win">By the end you can <em>assemble every artifact rule 10 demands — public repo, README with the graph data model, real Cypher, a demo video, and a live or fully documented local setup — and name Track 02</em>, evidenced by <em>a submission you can paste into the panel with nothing missing and disclosure of your AI assistant complete</em>.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="0011-explainable-answers.html">Prev</a>
+  <a href="../reference/track02-checklist.html">Track 02 check-off list</a>
+  <a href="../reference/graph-schema.html">Graph data model</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>Rule 10 is a closed list, not a vibe (<a href="#src">Graph Hacks rules</a>): "Every submission must include: a public source-code repository; a README with setup instructions and your graph data model; the Cypher queries or graph algorithms the product depends on; a demo video showing the working project; a live deployment, or complete local setup instructions if it cannot be deployed; the track you are entering." A great build missing one bullet is an incomplete submission — so we ship to the checklist, not to feel.</p>
+<p>Rule 7 sets the clock: the window runs "October 15, 12:01 AM IST to October 18, 11:59 PM IST," and submissions close at its end. Budget backward from 11:59 PM IST Oct 18, not from when you finish coding.</p>
+
+<h2>The idea — deadline-aware packet</h2>
+<p>Keep the packet in one folder so nothing drifts. Each row below maps one rule-10 bullet to the artifact that satisfies it.</p>
+
+<table>
+  <tr><th>Rule 10 bullet</th><th>Your artifact</th><th>Deadline slot</th></tr>
+  <tr><td>Public source-code repo</td><td>GitHub repo, one copy (dedupe root + <code>src/</code> if both exist)</td><td>Oct 18, before demo</td></tr>
+  <tr><td>README + graph data model</td><td><code>README.md</code> setup steps + model linked to <a href="../reference/graph-schema.html">graph data model</a></td><td>Oct 17</td></tr>
+  <tr><td>Cypher queries / graph algorithms</td><td><code>queries.cypher</code> with the queries the product runs</td><td>Oct 18</td></tr>
+  <tr><td>Demo video</td><td>2-minute screen recording, shot list below</td><td>Oct 18, 2h before close</td></tr>
+  <tr><td>Live deployment or full local setup</td><td>FalkorDB Cloud URL <em>or</em> Docker + app steps in README</td><td>Oct 18</td></tr>
+  <tr><td>Track you are entering</td><td>State <strong>Track 02 — Agent Memory and Coordination</strong> in repo + submission form</td><td>with submission</td></tr>
+</table>
+
+<p><strong>Two rules judges apply on top of the list.</strong> Rule 11: "AI coding assistants are allowed, but their use must be disclosed." Rule 12: participants "must understand the submitted code and be able to explain the graph model, the queries, the project architecture, and the technical decisions behind them." Disclosure is not a penalty — a one-line credit plus a short "key decisions" section in the README (why <strong>MERGE</strong> for idempotent writes, why one <strong>FalkorDB</strong> instance with <strong>multi-graph / multi-tenant topology</strong>) makes rule 12 easy to answer.</p>
+
+<h3>The 2-minute shot list</h3>
+<p>Record in this order; every clip is evidence for a Track 02 key-focus point (<a href="#src2">Graph Hacks overview</a>). Keep it under two minutes — judges watch many.</p>
+<ol class="steps">
+  <li><strong>0:00–0:15 — Problem.</strong> One sentence: an agent that forgets between sessions. Show the cockpit.</li>
+  <li><strong>0:15–0:35 — Memory in the graph.</strong> Open FalkorDB Browser; show real nodes/edges, not a mock.</li>
+  <li><strong>0:35–1:05 — Three tiers.</strong> Point at <strong>episodic memory</strong> (turns), <strong>semantic memory</strong> (facts/entities), <strong>procedural memory</strong> (a workflow subgraph) in one connected graph.</li>
+  <li><strong>1:05–1:25 — Handoff.</strong> Run a two-agent task; show the persisted ledger where state and responsibility transfer.</li>
+  <li><strong>1:25–1:45 — Tenant isolation.</strong> Switch tenant; show a second isolated graph, no bleed.</li>
+  <li><strong>1:45–2:00 — Path behind an answer.</strong> Ask a question; show the traversed subgraph that justifies the reply.</li>
+</ol>
+
+<div class="quiz" data-answer="2" data-explain="Rule 10 requires the Cypher queries or graph algorithms the product depends on as a shipped artifact. A working app alone does not satisfy it — a live graph is not the same as a readable list of the queries that make it work.">
+  <p class="q">Which rule-10 item do solo builders most often forget to include?</p>
+  <button type="button">A public source-code repository.</button>
+  <button type="button">The demo video.</button>
+  <button type="button">The Cypher queries or graph algorithms the product depends on.</button>
+</div>
+
+<h2>Do it</h2>
+<ol class="steps">
+  <li>
+    <p><strong>Dedupe the repo.</strong> If a root copy and a <code>src/</code> copy of the same file both exist, delete one and point imports at the survivor. Verify the app still starts before committing. Push to a public GitHub repo.</p>
+  </li>
+  <li>
+    <p><strong>Write the README.</strong> Two required sections: (a) <em>Setup</em> — <code>docker run -p 6379:6379 -it --rm falkordb/falkordb:latest</code> then your app's install/run commands; (b) <em>Graph data model</em> — link or embed <a href="../reference/graph-schema.html">the schema</a> and name the tenant graph convention. Add a <em>Key decisions</em> line disclosing your AI assistant (rule 11).</p>
+  </li>
+  <li>
+    <p><strong>Create <code>queries.cypher</code>.</strong> Copy out the real queries the product runs — the episodic write, the semantic <strong>MERGE</strong> of facts, the procedural lookup, the handoff ledger write, the multi-graph tenant switch, and the path query behind an answer. One comment line per query saying what it does and which key-focus point it serves.</p>
+  </li>
+  <li>
+    <p><strong>Choose live or local.</strong> Prefer a live deployment (FalkorDB Cloud is accepted by rule 4). If you cannot deploy, the README must contain complete local setup and the demo video is mandatory ("Projects that cannot be deployed must include complete local setup instructions and a working demo video" — FAQ, <a href="#src2">Graph Hacks overview</a>).</p>
+  </li>
+  <li>
+    <p><strong>Record the video</strong> against the shot list, upload it public, and paste the link into the README. Rehearse the rule-12 explanation until you can name the graph model, each query, and the architecture without notes.</p>
+  </li>
+  <li>
+    <p><strong>Run the check-off list</strong> at <a href="../reference/track02-checklist.html">track02-checklist.html</a>, then submit before 11:59 PM IST Oct 18 — with time to spare for the upload.</p>
+  </li>
+</ol>
+
+<h3>Why this wins — key-focus point → visible evidence</h3>
+<table>
+  <tr><th>Track 02 key-focus point</th><th>Where the judge sees it</th></tr>
+  <tr><td>Episodic, semantic, and procedural memory</td><td>Video 0:35–1:05; the three write queries in <code>queries.cypher</code></td></tr>
+  <tr><td>Persistent conversation history</td><td>Reopen a session after restart; turns still in the graph</td></tr>
+  <tr><td>Shared state and handoffs between agents</td><td>Video 1:05–1:25; handoff ledger query</td></tr>
+  <tr><td>High-concurrency reads and writes</td><td>Concurrent writer test in README; idempotent <strong>MERGE</strong> counts unchanged</td></tr>
+  <tr><td>Separate memory per user or tenant</td><td>Video 1:25–1:45; per-tenant graph name in the schema doc</td></tr>
+</table>
+
+<div class="callout">
+  <strong>Rule 3 test:</strong> if your product still works with FalkorDB removed, the graph is decoration. Before submitting, ask: does every key-focus point above fail without the graph? If yes, the graph is load-bearing — say so in the README.
+</div>
+
+<div class="source" id="src">
+  <h3>Primary source</h3>
+  <p>Submission requirements, deadlines, disclosure, and explainability. <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">Rules — Graph Hacks, WeMakeDevs × FalkorDB</a></p>
+  <p id="src2">Track 02 key-focus points, deployment preference, and the local-setup fallback. <a href="https://www.wemakedevs.org/hackathons/falkordb">Graph Hacks overview &amp; FAQ — WeMakeDevs</a></p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0106 — Debug Like a Scientist</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0106 · The Engineer's Prompt</p>
+<h1>Debug Like a Scientist</h1>
+<p class="lede">You do not find a bug by changing lines until it disappears. You find it by reproducing it, forcing three ranked hypotheses, and letting the cheapest test tell you where it lives.</p>
+
+<p class="win">By the end you can <em>turn a vague failure into a confirmed repro plus three ranked hypotheses before touching any code</em>, evidenced by a repro that fires on demand and a hypothesis table naming the one cheapest discriminating test.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../reference/prompt-playbook.html">Prompt playbook</a>
+  <a href="0105-decompose-and-contracts.html">Prev</a>
+  <a href="0107-verify-every-step.html">Next →</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>Your Track 02 build has a simulated backend to replace with real FalkorDB, and the failures ahead are predictable: Docker not up and port 6379 refused, the client failing to connect, a Cypher syntax error, a React <code>fetch</code> returning a blob instead of JSON. Each has a different root cause and a different fix. If you prompt "it doesn't work, fix it," a model will happily patch a plausible cause that has nothing to do with the actual failure — and you will have lost the afternoon with nine files touched and no idea which change mattered.</p>
+<p>The prompt is downstream of the diagnosis. You cannot direct an agent to fix what you have not reproduced.</p>
+
+<div class="habit">
+  No confirmed repro, no fix. Write expected, observed, and the reproductions steps <em>before</em> any theory, and force at least three hypotheses before chasing one.
+</div>
+
+<h2>The idea</h2>
+<p>Debugging is the scientific method in miniature: observe, hypothesise, predict, test, update ([SiliconWit](https://siliconwit.com/education/critical-thinking-engineers/debugging-as-reasoning/)). The practical loop runs in a fixed order ([MaxtDesign](https://maxtdesign.com/learn/developer-tools/systematic-debugging-method)):</p>
+<ol class="steps">
+  <li><strong>Reproduce reliably.</strong> Nail expected, observed (the exact error text, not "it crashes"), and the minimal sequence. "If you cannot trigger it on demand, that is your whole problem right now, and the work is to find a reliable repro, not a fix."</li>
+  <li><strong>Force three hypotheses.</strong> Even when one feels obvious. The claim is the suspected cause; the test is the cheapest experiment that would prove it false; the prediction says what you will see if true versus false. Writing the prediction first is what keeps you honest.</li>
+  <li><strong>Rank by likelihood × ease of test.</strong> Not likelihood alone: "a hypothesis that is probably right but takes four hours to test is a worse next move than one that is possibly right and takes thirty seconds." Cheap tests collapse the search space fastest.</li>
+  <li><strong>Run the cheapest discriminating test.</strong> Confirmed → you have the root cause. Falsified → do not start over; log it, re-rank, repeat.</li>
+  <li><strong>Fix the root cause, not the symptom.</strong> Minimum change to the confirmed cause; resist refactoring the neighbourhood.</li>
+  <li><strong>Add the regression test</strong> that would have failed before the fix and passes after, in the same commit.</li>
+</ol>
+<p>The failure mode this prevents is the one worth naming: "the single most common way AI-assisted debugging goes wrong is the model proposing a confident fix for a bug nobody reproduced" ([MaxtDesign](https://maxtdesign.com/learn/developer-tools/systematic-debugging-method)).</p>
+
+<p>Applied to your repo, a hypothesis table looks like this:</p>
+<pre><code>Expected: recall_turns() returns the 3 turns I wrote.
+Observed: fetch resolves, then "Unexpected token '&lt;'" — body is HTML.
+
+#  Cause                              Test (cheap)                    Prediction
+1  Vite dev proxy not forwarding /api curl localhost:5173/api/memory   404 / HTML → blame routing
+2  FalkorDB container not running        docker ps / nc -z localhost 6379  connection refused → blame DB
+3  Response not awaited as .json()       add await res.json() + log      raw shape shows → blame client
+Rank 2 first: 6379 check is 2 seconds.</code></pre>
+
+<div class="prompt-diff">
+  <div class="weak">
+    <p>"The memory thing doesn't work. It's broken, fix it."</p>
+  </div>
+  <div class="senior">
+    <p>Expected: <code>recall_turns()</code> returns the 3 turns I wrote. Observed: fetch resolves, then <code>SyntaxError: Unexpected token '&lt;' in JSON at position 0</code>. Repro: (1) <code>docker compose up</code>; (2) <code>npm run dev</code>; (3) submit one message in the cockpit. Do not propose a fix until you restate this repro and give me three ranked hypotheses with a prediction for each. Then run only the cheapest discriminating test and show its output.</p>
+  </div>
+</div>
+
+<div class="quiz" data-answer="1" data-explain="A confirmed repro is the precondition for a testable hypothesis. 'Try changing X' and 'find the bug' both act before the failure is reproducible, which is exactly the confident-patch-for-a-bug-nobody-reproduced failure. The discriminating test follows from a stated hypothesis.">
+  <p class="q">You have not reproduced the FalkorDB connection failure yet. What is the correct next instruction to the agent?</p>
+  <button type="button">"Try changing the connection string and the driver, find the bug."</button>
+  <button type="button">"Help me make the failure fire on demand: give me the minimal steps to reproduce, the exact error text, and what to check to confirm it."</button>
+  <button type="button">"Rewrite the memory layer to be more robust."</button>
+</div>
+
+<div class="drill">
+  <p><strong>Reproduce one real error in your repo and tabulate three hypotheses before changing any code.</strong></p>
+  <ol class="steps">
+    <li>Pick one genuine failure — most likely <code>nc -z localhost 6379</code> refused, a client connect error, or a bad Cypher query. Get it to fire on demand.</li>
+    <li>Write the three lines: <strong>Expected</strong>, <strong>Observed</strong> (paste the exact error), <strong>Repro</strong> (numbered steps). If it will not fire on demand, stop — writing the repro <em>is</em> the task.</li>
+    <li>Write the hypothesis table: three rows of <em>cause · cheapest test · prediction</em>. Rank by likelihood × ease of test and circle the top row. Do not run it yet.</li>
+    <li>Run only that one test. Log the result. If falsified, re-rank; if confirmed, fix the root cause and write the regression test in the same commit.</li>
+  </ol>
+</div>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>Reproduce first, force three ranked hypotheses, run the cheapest discriminating test, fix root cause, add the regression test; and the AI failure of a confident fix for an unreproduced bug. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">A Debugging Method That Beats Vibes — MaxtDesign</a></p>
+  <p>Debugging as the scientific method; the debugging loop, falsifiable hypotheses, and prediction before test. <a href="https://siliconwit.com/education/critical-thinking-engineers/debugging-as-reasoning/">Debugging as Scientific Reasoning — SiliconWit</a></p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

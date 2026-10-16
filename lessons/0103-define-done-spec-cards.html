@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0103 — Define Done: Spec Cards</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0103 · The Engineer's Prompt</p>
+<h1>Define Done: Spec Cards</h1>
+<p class="lede">"Wire up the memory" is a wish. A five-line spec card turns it into a task the AI can finish correctly on the first pass — and proves it when it says "done."</p>
+
+<p class="win">By the end you can <em>write a 5-part spec card for one task in your cockpit</em>, evidenced by <em>a copy-pasteable card whose exit criterion is a specific, verifiable check.</em></p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../reference/prompt-playbook.html">Prompt playbook</a>
+  <a href="../reference/exit-criteria.html">Deriving exit criteria</a>
+  <a href="0102-think-in-systems.html">Prev</a>
+  <a href="0104-engineer-the-context.html">Next →</a>
+</nav>
+
+<div class="habit">
+  Before you prompt, write the exit criterion first. If you cannot name the exact check that proves the task is done, you are not ready to hand it to an agent.
+</div>
+
+<h2>The idea</h2>
+<p>An under-specified task fails three ways: the agent does too little (stops at the first ambiguity), too much (invents requirements), or something technically correct that is wrong for your context. The fix is not a <em>better-worded</em> prompt — it is a <strong>spec</strong>. The 2026 practice is spec-driven development: a mini-spec for every task, with five parts.</p>
+<blockquote>"Build the login feature" is not a task. It's a wish.</blockquote>
+<p>The five parts: <strong>(1) what it builds</strong> — one sentence. <strong>(2) exit criterion</strong> — a specific, verifiable check, never "it works." <strong>(3) out of scope</strong> — what it must not do. <strong>(4) locked decisions</strong> — choices the agent cannot reopen. <strong>(5) verification step</strong> — how the agent proves it.</p>
+<p>The exit criterion is the highest-leverage line. "Feature works" changes with whoever is looking. "The login form submits, receives a session cookie, and redirects to <code>/dashboard</code>" cannot be argued with. Teams using spec-driven tasks report <strong>3–10× higher first-pass success rates</strong> because the agent never has to guess what done looks like.</p>
+
+<div class="prompt-diff">
+  <div class="weak">
+    <p>"Wire up the memory so the cockpit uses FalkorDB."</p>
+  </div>
+  <div class="senior">
+    <p><strong>What:</strong> One real read path from the cockpit to FalkorDB.<br>
+    <strong>Exit:</strong> <code>curl localhost:5173/api/graph/nodes</code> returns JSON containing a node I created in the FalkorDB browser.<br>
+    <strong>Out of scope:</strong> writes, auth, styling.<br>
+    <strong>Locked:</strong> Vite dev-server plugin, port 6379, graph name <code>graphsync_user1_ai_avatar_saas</code>.<br>
+    <strong>Verify:</strong> run the curl, paste the output.</p>
+  </div>
+</div>
+
+<div class="quiz" data-answer="1" data-explain="The most important part of a spec is the exit criterion — a specific, verifiable check. 'Feature works' is not verifiable because it changes depending on who is looking.">
+  <p class="q">Which line of the spec card carries the most leverage?</p>
+  <button type="button">"What it builds," because a one-sentence goal is the clearest part.</button>
+  <button type="button">The exit criterion, because it defines the specific, verifiable check that tells the agent when it is done.</button>
+  <button type="button">"Out of scope," because limiting the agent is the hardest part of prompting.</button>
+</div>
+
+<h2>Do it — build your spec card</h2>
+<p>Fill in the builder below for your next task, then copy the output straight into your agent prompt.</p>
+
+<div class="specbuilder">
+  <h3>Spec-card builder</h3>
+  <label>1. What it builds<input class="sc-what" placeholder="One sentence."></label>
+  <label>2. Exit criterion<input class="sc-exit" placeholder="A specific, verifiable check."></label>
+  <label>3. Out of scope<input class="sc-scope" placeholder="What it must NOT do."></label>
+  <label>4. Locked decisions<input class="sc-locked" placeholder="Choices that cannot be reopened."></label>
+  <label>5. Verification command<input class="sc-verify" placeholder="The command that proves it."></label>
+  <pre class="spec-out"></pre>
+  <button class="copybtn" type="button">Copy spec card</button>
+</div>
+
+<div class="drill">
+  Spec the task of wiring <strong>one</strong> real FalkorDB read into your cockpit — no writes, no styling, just one path. Aim it at your simulated backend: point it at the graph client in your <code>src/graphsync_multi_agent_falkordb_memory_cockpit.tsx</code> and replace one hard-coded object with a real query. Make part 2 a command that returns a node you created by hand in the FalkorDB browser. Then paste the card into the AI as your prompt — and hold it to the verification step.
+</div>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>Spec-driven development and the exit criterion: <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">7+ Things Every Developer Gets Wrong About AI Agents in 2026 — 10xdev.blog</a>.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/spec-card.js"></script>
+</body>
+</html>

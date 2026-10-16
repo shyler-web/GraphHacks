@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="983.8" viewBox="40 -10 1680 983.8">
+<defs><marker id="arrow-868e96" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#868e96" /></marker><marker id="arrow-e67700" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#e67700" /></marker><marker id="arrow-2f9e44" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#2f9e44" /></marker><marker id="arrow-6741d9" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#6741d9" /></marker><marker id="arrow-c92a2a" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#c92a2a" /></marker><style>text { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }</style></defs>
+<text x="400" y="38" font-size="28" fill="#1b1b1f">GraphSync — Multi-Agent FalkorDB Memory Cockpit</text>
+<text x="520" y="62" font-size="14" fill="#868e96">WeMakeDevs × FalkorDB Graph Hacks · Track 02 — Agent Memory &amp; Coordination</text>
+<rect x="60" y="90" width="1400" height="150" rx="8" stroke="#1971c2" fill="#d0ebff" stroke-width="2" />
+<text x="80" y="118" font-size="16" fill="#1971c2">PRESENTATION LAYER · Vite + React + TypeScript</text>
+<text x="80" y="136" font-size="12" fill="#868e96">Entry chain → cockpit UI, controls and live panels</text>
+<rect x="90" y="160" width="130" height="52" rx="8" stroke="#1971c2" fill="#ffffff" stroke-width="1" />
+<text x="155" y="186" font-size="14" fill="#1971c2" text-anchor="middle" dominant-baseline="central">index.html</text>
+<rect x="240" y="160" width="140" height="52" rx="8" stroke="#1971c2" fill="#ffffff" stroke-width="1" />
+<text x="310" y="186" font-size="14" fill="#1971c2" text-anchor="middle" dominant-baseline="central">src/main.tsx</text>
+<rect x="400" y="160" width="150" height="52" rx="8" stroke="#f59f00" fill="#fff9db" stroke-width="2" />
+<text x="475" y="186" font-size="14" fill="#f59f00" text-anchor="middle" dominant-baseline="central">App()  ★ god node</text>
+<rect x="570" y="160" width="210" height="52" rx="8" stroke="#1971c2" fill="#ffffff" stroke-width="1" />
+<text x="675" y="186" font-size="14" fill="#1971c2" text-anchor="middle" dominant-baseline="central">Canvas Graph View</text>
+<rect x="800" y="160" width="300" height="52" rx="8" stroke="#1971c2" fill="#ffffff" stroke-width="1" />
+<text x="950" y="186" font-size="14" fill="#1971c2" text-anchor="middle" dominant-baseline="central">Controls · Maturity Dial L0–L5 + Domain Lenses</text>
+<rect x="1120" y="160" width="310" height="52" rx="8" stroke="#1971c2" fill="#ffffff" stroke-width="1" />
+<text x="1275" y="186" font-size="14" fill="#1971c2" text-anchor="middle" dominant-baseline="central">Panels · Cognitive Debt + Bubble-Up + Handoff Ledger</text>
+<rect x="60" y="270" width="1400" height="200" rx="8" stroke="#e67700" fill="#fff4e6" stroke-width="2" />
+<text x="80" y="298" font-size="16" fill="#e67700">AGENT ORCHESTRATION LAYER · App() handlers</text>
+<text x="80" y="316" font-size="12" fill="#868e96">App() orchestrates five handlers → one resilient LLM gateway</text>
+<rect x="90" y="330" width="250" height="54" rx="8" stroke="#e67700" fill="#ffffff" stroke-width="1" />
+<text x="215" y="357" font-size="14" fill="#e67700" text-anchor="middle" dominant-baseline="central">handleRunMultiAgentPrompt</text>
+<rect x="360" y="330" width="215" height="54" rx="8" stroke="#e67700" fill="#ffffff" stroke-width="1" />
+<text x="467.5" y="357" font-size="14" fill="#e67700" text-anchor="middle" dominant-baseline="central">handleAskGeminiCoach</text>
+<rect x="595" y="330" width="215" height="54" rx="8" stroke="#e67700" fill="#ffffff" stroke-width="1" />
+<text x="702.5" y="357" font-size="14" fill="#e67700" text-anchor="middle" dominant-baseline="central">handleGroundedResearch</text>
+<rect x="830" y="330" width="200" height="54" rx="8" stroke="#e67700" fill="#ffffff" stroke-width="1" />
+<text x="930" y="357" font-size="14" fill="#e67700" text-anchor="middle" dominant-baseline="central">handleApplySeniorFix</text>
+<rect x="1050" y="330" width="200" height="54" rx="8" stroke="#e67700" fill="#ffffff" stroke-width="1" />
+<text x="1150" y="357" font-size="14" fill="#e67700" text-anchor="middle" dominant-baseline="central">handleAutoDeclutter</text>
+<rect x="250" y="410" width="960" height="46" rx="8" stroke="#e67700" fill="#fff4e6" stroke-width="2" />
+<text x="730" y="433" font-size="14" fill="#e67700" text-anchor="middle" dominant-baseline="central">callGeminiWithBackoff · resilient LLM calls (retry + backoff)</text>
+<rect x="60" y="510" width="1400" height="170" rx="8" stroke="#2f9e44" fill="#d3f9d8" stroke-width="2" />
+<text x="80" y="538" font-size="16" fill="#2f9e44">MEMORY LAYER · 3-Tier Agent Memory</text>
+<text x="80" y="556" font-size="12" fill="#868e96">episodic + semantic + procedural — one connected graph, isolated per tenant</text>
+<rect x="90" y="570" width="300" height="72" rx="8" stroke="#2f9e44" fill="#ffffff" stroke-width="1" />
+<text x="240" y="606" font-size="14" fill="#2f9e44" text-anchor="middle" dominant-baseline="central">Episodic Memory
+past interactions, timestamped</text>
+<rect x="420" y="570" width="300" height="72" rx="8" stroke="#2f9e44" fill="#ffffff" stroke-width="1" />
+<text x="570" y="606" font-size="14" fill="#2f9e44" text-anchor="middle" dominant-baseline="central">Semantic Memory
+entities · facts · relationships</text>
+<rect x="750" y="570" width="300" height="72" rx="8" stroke="#2f9e44" fill="#ffffff" stroke-width="1" />
+<text x="900" y="606" font-size="14" fill="#2f9e44" text-anchor="middle" dominant-baseline="central">Procedural Memory
+tool-use &amp; query workflows</text>
+<rect x="1080" y="570" width="350" height="72" rx="8" stroke="#2f9e44" fill="#d3f9d8" stroke-width="2" />
+<text x="1255" y="606" font-size="14" fill="#2f9e44" text-anchor="middle" dominant-baseline="central">Multi-Tenant Isolation
+INITIAL_TENANTS — one graph per user/tenant</text>
+<rect x="60" y="720" width="1400" height="170" rx="8" stroke="#6741d9" fill="#e5dbff" stroke-width="2" />
+<text x="80" y="748" font-size="16" fill="#6741d9">PERSISTENCE LAYER · FalkorDB</text>
+<text x="80" y="766" font-size="12" fill="#868e96">data model: nodes + typed, directed edges, queried with Cypher</text>
+<rect x="1150" y="726" width="280" height="34" rx="8" stroke="#c92a2a" fill="#ffe3e3" stroke-width="2" />
+<text x="1290" y="743" font-size="14" fill="#c92a2a" text-anchor="middle" dominant-baseline="central">⚠ SIMULATED — real Docker instance pending</text>
+<rect x="90" y="778" width="330" height="72" rx="8" stroke="#6741d9" fill="#ffffff" stroke-width="1" />
+<text x="255" y="814" font-size="14" fill="#6741d9" text-anchor="middle" dominant-baseline="central">Cypher Traversal · liveCypherQuery</text>
+<rect x="555" y="778" width="350" height="72" rx="8" stroke="#6741d9" fill="#ffffff" stroke-width="1" />
+<text x="730" y="814" font-size="14" fill="#6741d9" text-anchor="middle" dominant-baseline="central">FalkorDB Instance · multi-graph topology</text>
+<rect x="1055" y="778" width="330" height="72" rx="8" stroke="#6741d9" fill="#ffffff" stroke-width="1" />
+<text x="1220" y="814" font-size="14" fill="#6741d9" text-anchor="middle" dominant-baseline="central">Graph Model · nodes + typed edges</text>
+<ellipse cx="1610" cy="350" rx="90" ry="60" stroke="#c92a2a" fill="#ffe3e3" stroke-width="2" />
+<text x="1610" y="350" font-size="14" fill="#c92a2a" text-anchor="middle" dominant-baseline="central">Gemini API
+(external LLM)</text>
+<path d="M 220 186 L 240 186" stroke="#868e96" fill="none" stroke-width="1.5" marker-end="url(#arrow-868e96)" />
+<path d="M 380 186 L 400 186" stroke="#868e96" fill="none" stroke-width="1.5" marker-end="url(#arrow-868e96)" />
+<path d="M 550 186 L 570 186" stroke="#868e96" fill="none" stroke-width="1.5" marker-end="url(#arrow-868e96)" />
+<path d="M 475 212 L 475 330" stroke="#e67700" fill="none" stroke-width="2" marker-end="url(#arrow-e67700)" />
+<path d="M 600 384 L 600 410" stroke="#e67700" fill="none" stroke-width="1.5" marker-end="url(#arrow-e67700)" />
+<path d="M 600 456 L 600 570" stroke="#2f9e44" fill="none" stroke-width="2" marker-end="url(#arrow-2f9e44)" />
+<path d="M 600 642 L 600 778" stroke="#6741d9" fill="none" stroke-width="2" marker-end="url(#arrow-6741d9)" />
+<path d="M 1255 642 L 860 778" stroke="#2f9e44" fill="none" stroke-width="1.5" marker-end="url(#arrow-2f9e44)" />
+<path d="M 1210 433 L 1520 353" stroke="#c92a2a" fill="none" stroke-width="2" marker-end="url(#arrow-c92a2a)" />
+<path d="M 420 814 L 555 814" stroke="#6741d9" fill="none" stroke-width="1.5" marker-end="url(#arrow-6741d9)" />
+<path d="M 905 814 L 1055 814" stroke="#6741d9" fill="none" stroke-width="1.5" marker-end="url(#arrow-6741d9)" />
+<text x="610" y="512" font-size="12" fill="#2f9e44">read / write</text>
+<text x="610" y="714" font-size="12" fill="#6741d9">MERGE · MATCH (Cypher)</text>
+<text x="1060" y="712" font-size="12" fill="#2f9e44">one graph per tenant</text>
+<text x="1240" y="420" font-size="12" fill="#c92a2a">prompt / response</text>
+<text x="60" y="926" font-size="14" fill="#c92a2a">⚠ Honesty (graphify audit): backend is SIMULATED — MISSION criterion #1 (real FalkorDB via Docker) still unmet. Root cockpit file duplicates /src.</text>
+<text x="60" y="949" font-size="12" fill="#868e96">God node App() owns all five handlers (cohesion 0.11 → file doing too much; split recommended). 27% of code edges INFERRED.</text>
+</svg>

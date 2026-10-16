@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Set — Track 02</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Reference</p>
+<h1>The Feature Set</h1>
+<p class="lede">What to build, why each feature exists, and how you'll prove it. Everything here traces to the official Track 02 brief or the hackathon rules — nothing is invented.</p>
+
+<nav class="nav">
+  <a href="CURRICULUM.html">← Curriculum</a>
+  <a href="track02-checklist.html">Track 02 check-off</a>
+  <a href="graph-schema.html">Data model</a>
+  <a href="exit-criteria.html">Exit criteria</a>
+</nav>
+
+<p class="win">Build the 10 MVP features, prove each with its exit criterion, add 2–3 differentiators, and submit the 7 artifacts. That is the whole scope.</p>
+
+<h2>1 · Required features (MVP)</h2>
+<table>
+  <tr><th>#</th><th>Feature</th><th>Key-focus it satisfies</th><th>Exit criterion (observable)</th></tr>
+  <tr><td>1</td><td><strong>Real FalkorDB connection</strong></td><td>rule 3 — graph must do real work</td><td>Stop FalkorDB → the app errors; it does not silently keep working</td></tr>
+  <tr><td>2</td><td><strong>Episodic memory</strong></td><td>Episodic memory</td><td>Two messages → two Turn nodes persisted and recalled in order</td></tr>
+  <tr><td>3</td><td><strong>Semantic memory</strong></td><td>Semantic memory</td><td>A message builds Entity/Fact nodes you can query</td></tr>
+  <tr><td>4</td><td><strong>Procedural memory</strong></td><td>Procedural memory</td><td>A stored Workflow is fetched and replayed, not re-derived</td></tr>
+  <tr><td>5</td><td><strong>Persistent conversation history</strong></td><td>Persistent conversation history</td><td>Reopen in a new session → history is still present</td></tr>
+  <tr><td>6</td><td><strong>Multi-agent coordination + handoffs</strong></td><td>Shared state and handoffs between agents</td><td>A HANDED_TO edge with reason + timestamp exists between agents</td></tr>
+  <tr><td>7</td><td><strong>Per-tenant isolation</strong></td><td>Separate memory per user or tenant</td><td>Tenant A has 5 turns → tenant B sees 0</td></tr>
+  <tr><td>8</td><td><strong>High-concurrency reads/writes</strong></td><td>High-concurrency reads and writes</td><td>N concurrent writers → all N turns recorded, no loss</td></tr>
+  <tr><td>9</td><td><strong>Explainability — path behind the answer</strong></td><td>challenge brief ("show the path behind an answer")</td><td>The answer returns the subgraph and sources it used</td></tr>
+  <tr><td>10</td><td><strong>Cockpit UI wired to the graph</strong></td><td>makes the others visible to a judge</td><td>A node created in FalkorDB appears in the UI on reload</td></tr>
+</table>
+
+<h2>2 · The three-tier trick (features 2–4 as one)</h2>
+<div class="habit">
+The winning move is showing episodic, semantic, and procedural memory as <strong>one connected graph</strong> — a Turn (episodic) links to an Entity (semantic) which links to a Workflow (procedural). Three separate stores look like three demos; one connected graph looks like a memory <em>system</em>.
+</div>
+<p>See the proposed node/edge structure in <a href="graph-schema.html">the data model</a>.</p>
+
+<h2>3 · Differentiators (to win, not just qualify)</h2>
+<table>
+  <tr><th>Differentiator</th><th>Why it scores</th><th>Cost</th></tr>
+  <tr><td>Live memory visualization in the cockpit</td><td>Judges <em>see</em> the graph grow — instant proof of "real work"</td><td>Low (UI already exists)</td></tr>
+  <tr><td>Handoff ledger timeline</td><td>Makes coordination visible, not just claimed</td><td>Low</td></tr>
+  <tr><td>Tenant switcher</td><td>Isolation becomes a 5-second demo, not an explanation</td><td>Low</td></tr>
+  <tr><td>Concurrency panel</td><td>Shows evidence for the concurrency claim</td><td>Medium</td></tr>
+  <tr><td>Persona levels / domain lenses</td><td>Your existing framing; use only if it earns screen time</td><td>Already built</td></tr>
+</table>
+
+<h2>4 · Submission artifacts (rule 10)</h2>
+<ul class="checklist">
+  <li>Public source-code repository</li>
+  <li>README with setup instructions <strong>and the graph data model</strong></li>
+  <li>The real Cypher queries / graph algorithms the product depends on (<code>queries.cypher</code>)</li>
+  <li>Demo video of the working project</li>
+  <li>Live deployment, or complete local setup instructions</li>
+  <li>The track you are entering (Track 02)</li>
+  <li>AI-assistant use disclosed (rule 11)</li>
+</ul>
+
+<h2>5 · De-scope (do NOT build)</h2>
+<div class="drill" style="background:#f7e4e5;border-color:#e3b6b8">
+  Auth and billing · advanced graph algorithms (beyond shortest-path if used) · Track 01/03 features · mobile · production hardening · horizontal scaling. Every hour on these is an hour not spent proving a key-focus point.
+</div>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Track definitions and key-focus points — <a href="https://www.wemakedevs.org/hackathons/falkordb">Graph Hacks</a>. Required technology and "real work" — <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">rules 2, 3, 10</a>.</p>
+</div>
+
+<footer>
+  <p>Part of the GraphHacks Track 02 mission. Stuck? Ask your teacher in opencode.</p>
+</footer>
+</body>
+</html>

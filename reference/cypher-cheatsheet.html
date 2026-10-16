@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cypher Cheat Sheet — FalkorDB</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Agent Memory and Coordination · Reference</p>
+<h1>Cypher Cheat Sheet</h1>
+<p class="lede">Everything you need to read and write FalkorDB <strong>Cypher</strong> while building the Track 02 <strong>agent memory</strong> system. Keep this open beside the editor. Every clause and example is from the official FalkorDB Cypher reference.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../lessons/0002-cypher-for-memory.html">Lesson 0002 · Cypher for Memory</a>
+  <a href="../lessons/0003-three-tier-memory-model.html">Lesson 0003 · Three-Tier Memory Model</a>
+  <a href="../lessons/0004-episodic-conversation-history.html">Lesson 0004 · Episodic History</a>
+  <a href="../lessons/0005-semantic-memory-facts.html">Lesson 0005 · Semantic Facts</a>
+  <a href="../lessons/0006-procedural-memory-playbooks.html">Lesson 0006 · Procedural Playbooks</a>
+  <a href="graph-schema.html">Graph data model</a>
+</nav>
+
+<h2>Clauses at a glance</h2>
+<table>
+  <tr><th>Clause</th><th>One-line purpose</th></tr>
+  <tr><td><code>MATCH</code></td><td>Find existing patterns (nodes + edges); no match → no row.</td></tr>
+  <tr><td><code>OPTIONAL MATCH</code></td><td>Like a LEFT JOIN — unmatched elements come back <code>null</code> instead of dropping the row.</td></tr>
+  <tr><td><code>WHERE</code></td><td>Filter rows by predicates (comparison, string, <code>IN</code>, boolean logic, pattern predicates).</td></tr>
+  <tr><td><code>CREATE</code></td><td>Always create new nodes/edges — never checks for duplicates.</td></tr>
+  <tr><td><code>MERGE</code></td><td>Match the pattern or create it — the basis of idempotent memory writes.</td></tr>
+  <tr><td><code>SET</code></td><td>Create or update properties (and labels) on bound entities.</td></tr>
+  <tr><td><code>DELETE</code></td><td>Remove nodes/edges; deleting a node also deletes its edges.</td></tr>
+  <tr><td><code>DETACH DELETE</code></td><td>Delete nodes and their edges explicitly; in FalkorDB same behavior as <code>DELETE</code>.</td></tr>
+  <tr><td><code>RETURN</code></td><td>Project the result set; non-aggregated expressions become grouping keys.</td></tr>
+  <tr><td><code>WITH</code></td><td>Pipe results between query parts and control which variables stay in scope.</td></tr>
+  <tr><td><code>ORDER BY</code></td><td>Sort output (<code>ASC</code>/<code>DESC</code>), possibly by several keys.</td></tr>
+  <tr><td><code>LIMIT</code></td><td>Cap the number of returned rows (does not stop eager writes — see gotchas).</td></tr>
+  <tr><td><code>UNWIND</code></td><td>Expand a list into one row per element — bulk writes and batch reads.</td></tr>
+</table>
+
+<h2>Pattern syntax legend</h2>
+<table>
+  <tr><th>Pattern</th><th>Meaning</th></tr>
+  <tr><td><code>()</code></td><td>Anonymous node.</td></tr>
+  <tr><td><code>(a)</code></td><td>Node bound to variable <code>a</code>.</td></tr>
+  <tr><td><code>(a:Label)</code></td><td>Variable with a label.</td></tr>
+  <tr><td><code>(:Label {key: 'value'})</code></td><td>Label plus an inline property filter (equivalent to <code>WHERE</code>).</td></tr>
+  <tr><td><code>(a)-[]->(b)</code></td><td>Any directed edge from <code>a</code> to <code>b</code>.</td></tr>
+  <tr><td><code>(a)-[r:TYPE]-&gt;(b)</code></td><td>Typed, directed <strong>edge (relationship)</strong> bound to <code>r</code>.</td></tr>
+  <tr><td><code>(a)-[:TYPE]-(b)</code></td><td>Typed edge, either direction.</td></tr>
+  <tr><td><code>(a)-[:KNOWS*]-&gt;(b)</code></td><td>Variable-length path, 1 to infinity hops.</td></tr>
+  <tr><td><code>(a)-[:KNOWS*2]-&gt;(b)</code></td><td>Exactly 2 hops.</td></tr>
+  <tr><td><code>(a)-[:KNOWS*1..3]-&gt;(b)</code></td><td>Between 1 and 3 hops.</td></tr>
+  <tr><td><code>(a)-[:KNOWS*..3]-&gt;(b)</code></td><td>Up to 3 hops (lower bound defaults to 1, upper to infinity).</td></tr>
+  <tr><td><code>p = (a)-[:KNOWS*1..3]-&gt;(b)</code></td><td>Named path; inspect with <code>nodes(p)</code>, <code>relationships(p)</code>, <code>length(p)</code>.</td></tr>
+</table>
+
+<h2>Comments &amp; parameters</h2>
+<pre><code>// single-line comment
+/* multi-line
+   comment */
+
+// $param is a placeholder filled by the client, never string-concatenated:
+// GRAPH.QUERY social 'CYPHER name="Alice" MATCH (n:Person {name: $name}) RETURN n'
+MATCH (n:Person {name: $name}) RETURN n</code></pre>
+<p>Comments go anywhere whitespace is allowed. Every official client exposes a language-native way to pass parameters — always use it instead of pasting user input into the query string.</p>
+
+<h2>Agent-memory snippets</h2>
+
+<h3>1 · Upsert a memory with MERGE</h3>
+<p>Merge one entity per clause. A single <code>MERGE</code> over a whole path either matches all of it or creates all of it, duplicating existing endpoints when only the edge is missing.</p>
+<pre><code>MERGE (u:User {id: $userId})
+MERGE (m:Memory {id: $memoryId})
+  ON CREATE SET m.text = $text, m.created = timestamp(),
+                m.kind = 'episodic'
+  ON MATCH  SET m.text = $text, m.last_seen = timestamp()
+MERGE (u)-[:REMEMBERS]-&gt;(m)</code></pre>
+<p>This is the idempotent write pattern behind <strong>episodic memory</strong> and <strong>semantic memory</strong> alike: re-running it never forks a duplicate node.</p>
+
+<h3>2 · Recall the last N turns for a user</h3>
+<p>The conversation history is one timestamped <strong>node</strong> per turn, chained so ordering survives a reload.</p>
+<pre><code>MATCH (u:User {id: $userId})-[:SAID]-&gt;(t:Turn)
+RETURN t.role AS role, t.text AS text, t.at AS at
+ORDER BY t.at DESC
+LIMIT $n</code></pre>
+<p>Re-insert in reverse client-side to restore chronology. <code>LIMIT</code> caps the read — safe here because this query has no eager write (see gotchas).</p>
+
+<h3>3 · Find all facts about an entity</h3>
+<p><strong>Semantic memory</strong> is durable facts as entity nodes joined by typed edges. This walks every outgoing fact from one entity.</p>
+<pre><code>MATCH (e:Entity {name: $name})-[r]-&gt;(o)
+RETURN type(r) AS predicate, o.name AS object, o.value AS value
+ORDER BY predicate, object</code></pre>
+<p>For a symmetric lookup, match <code>-[r]-</code> (undirected) and read <code>startNode(r)</code> / <code>endNode(r)</code> when you need the direction back.</p>
+
+<h3>4 · Fetch a workflow's ordered steps</h3>
+<p><strong>Procedural memory</strong> is a reusable workflow subgraph — steps hanging off a workflow node, each carrying its own order.</p>
+<pre><code>MATCH (w:Workflow {id: $workflowId})-[:HAS_STEP]-&gt;(s:Step)
+RETURN s.order AS step, s.tool AS tool, s.input AS input
+ORDER BY s.order ASC</code></pre>
+<p>To replay a handoff chain, traverse the workflow edges in order rather than reading steps as loose rows:</p>
+<pre><code>MATCH p = (w:Workflow {id: $workflowId})-[:NEXT*1..10]-&gt;(s:Step)
+RETURN nodes(p) AS path, length(p) AS hops</code></pre>
+
+<h2>Gotchas that bite</h2>
+
+<h3>CREATE vs MERGE</h3>
+<p><code>CREATE (m:Memory {id: $id})</code> on every turn silently multiplies nodes. Use <code>MERGE</code> for anything that must be idempotent; use <code>CREATE</code> only for genuinely new entities (a fresh turn, a new event). And remember: merging a whole path can duplicate endpoints — merge each entity in its own clause, then merge the edge.</p>
+
+<h3>DETACH DELETE</h3>
+<p>Deleting a node always deletes its incoming and outgoing edges. FalkorDB never leaves orphaned edges, and its <code>DELETE</code> already behaves like <code>DETACH DELETE</code> — both keywords work the same way. Wipe a graph with <code>MATCH (n) DETACH DELETE n</code>.</p>
+
+<h3>Case sensitivity</h3>
+<p>Labels, edge types, and property keys are matched exactly as written — <code>:User</code> is not <code>:user</code>, and <code>m.startedAt</code> is not <code>m.started_at</code>. Pick one casing per key and use it everywhere (including in your React/TS client code). Clause keywords are conventionally uppercase; keep labels and properties case-consistent or <code>MATCH</code> returns nothing.</p>
+
+<h3>Returning whole paths</h3>
+<p>Returning a bound node or path returns the entity, not its properties: <code>RETURN u</code> returns the full node. Project the fields you need instead. When a relationship in a pattern is never referenced elsewhere, FalkorDB only verifies that at least one match exists — reference the alias (e.g. <code>RETURN count(b), e</code>) when you must count every match. Named paths expose their parts: <code>nodes(p)</code>, <code>relationships(p)</code>, <code>length(p)</code>.</p>
+
+<h3>LIMIT does not restrict eager writes</h3>
+<p><code>UNWIND [1,2,3] AS v CREATE (a {property: v}) RETURN a LIMIT 1</code> creates three nodes and returns one. <code>LIMIT</code> applies after <code>CREATE</code>, <code>SET</code>, <code>DELETE</code>, <code>MERGE</code>, and aggregating projections. Filter before you write, not after.</p>
+
+<h3>No GROUP BY, no regex operator</h3>
+<p>Non-aggregated expressions in <code>RETURN</code> are implicit grouping keys. Regex operators are unsupported — use <code>STARTS WITH</code>, <code>ENDS WITH</code>, <code>CONTAINS</code>, or <code>string.matchRegEx()</code>.</p>
+
+<div class="callout">
+<strong>Track 02 tie-in.</strong> A <strong>multi-graph / multi-tenant topology</strong> gives each user or tenant a separate memory graph, so the same Cypher runs per tenant with no <code>tenantId</code> filter needed. Every memory write that matters should be a <code>MERGE</code>, so concurrent agents can retry without corrupting the graph.
+</div>
+
+<div class="source">
+<h3>Source</h3>
+<p>FalkorDB Cypher reference and cheat sheet: <a href="https://docs.falkordb.com/cypher/">docs.falkordb.com/cypher/</a> · <a href="https://docs.falkordb.com/cypher/cheat-sheet">docs.falkordb.com/cypher/cheat-sheet</a>. Clause pages: MERGE, DELETE, CREATE, WHERE, OPTIONAL MATCH, RETURN, known limitations.</p>
+</div>
+
+<footer>
+  <p><a href="../reference/CURRICULUM.html">← Back to the curriculum</a> · <a href="../GLOSSARY.md">Glossary</a>. Reference, not a lesson — no win to log. Stuck on a query? Ask your teacher in opencode.</p>
+</footer>
+</body>
+</html>

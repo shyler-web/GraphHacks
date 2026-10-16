@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0108 — Decide Under Uncertainty</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0108 · The Engineer's Prompt</p>
+<h1>Decide Under Uncertainty</h1>
+<p class="lede">You are about to lock a backend language, a graph schema, and a submission format with no way to test them first. Some of those you can change tomorrow for free; some you cannot. The rubric tells you which is which — and the AI should give you options, not a verdict.</p>
+
+<p class="win">By the end you can <em>classify any Track 02 decision as mandatory, reversible, or expensive-to-reverse and act accordingly</em>, evidenced by <em>a three-line decision record for the Node-vs-Python fork plus the prompt you used to get options instead of an answer</em>.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../reference/prompt-playbook.html">Prompt playbook</a>
+  <a href="0107-verify-every-step.html">Prev</a>
+  <a href="0109-roles-and-autonomy.html">Next →</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>Every remaining hour is a bet. Spend one agonising over a button colour and you have none for the graph schema. The engineering skill is not "decide well" in the abstract — it is <strong>spending judgment in proportion to what reversal would cost</strong>. As implementation gets cheaper, "making and defending such decisions becomes more rather than less important." <a href="#hb">[SE Handbook]</a> And rule 12 requires you to explain your technical decisions, so the decision and its reasoning have to exist somewhere you can point at.</p>
+
+<div class="habit">
+  Before committing, always answer the three questions. The answer decides how long you are allowed to think.
+</div>
+
+<h2>The idea</h2>
+<p>The handbook gives the rubric directly. Its <strong>Changeability</strong> decision asks: <em>"How expensive will this decision be to reverse after we make it?"</em> — because "the relevant quantity is … the cost of changing that decision after commitment." <a href="#hb">[SE Handbook]</a> The consequence is a rule of thumb worth memorising:</p>
+<blockquote>"if it is expensive to change, try to get it right before committing; if it is cheap to change, do not spend more avoiding error than the error costs to correct." <a href="#hb">[SE Handbook]</a></blockquote>
+<p>And it names exactly where cost concentrates: "UI text, configuration, local algorithms, and isolated implementation details may be inexpensive to revise. Interfaces, persistent data representations, architectural boundaries, security protocols, external integrations, and certified behavior can become expensive or effectively irreversible." <a href="#hb">[SE Handbook]</a> Map that onto Track 02 and the line falls cleanly:</p>
+<table>
+  <tr><th>Decision</th><th>Class</th><th>How to decide</th></tr>
+  <tr><td>Track / key-focus features / submission format</td><td>Mandatory</td><td>Not a choice — build to spec. Do not reopen.</td></tr>
+  <tr><td>Graph schema (labels, relationship types, property keys), backend language, submission format</td><td>Expensive to reverse</td><td>Decide deliberately. Draw it, weigh consequences, buy evidence if cheap.</td></tr>
+  <tr><td>Logging library, UI copy, local helper functions, which mock data to seed</td><td>Reversible</td><td>Pick fast. Move on. Being wrong costs twenty minutes.</td></tr>
+</table>
+<p>The handbook's architecture procedure supplies the second half — <strong>separate constraints from objectives</strong>, eliminate dominated options, "compare genuine tradeoffs", and "buy information when uncertainty could change the decision." <a href="#hb">[SE Handbook]</a> The same discipline applies to autonomy: reversible exploration can proceed autonomously, but a hard-to-reverse action (the article's example is buying a flight) should drop back to a confirmation. "The level of autonomy is a design decision — and more autonomy is not always better." <a href="#bb">[BigData Boutique]</a> The third question is the one that keeps you honest: <em>what evidence would change my mind?</em> "Do not spend effort obtaining information that cannot change the decision." <a href="#hb">[SE Handbook]</a></p>
+
+<pre><code>DECISION RECORD — three lines, keep it in the repo
+DECISION: what you chose (one clause).
+WHY:      the constraint/objective that decided it.
+REVERSE:  cheap or expensive, and the seam that would contain a reversal.
+
+Example:
+DECISION: backend = Node/TypeScript
+WHY:      one language across the Vite+React+TS app; FalkorDB has a first-class Node client
+REVERSE:  expensive-ish, but contained behind the memory-service contract
+</code></pre>
+
+<p>Note what the AI is for here. It will happily hand you a confident verdict — and a verdict you cannot defend fails rule 12 and leaves you unable to debug the system you accepted. Ask it for the <strong>options and their consequences</strong>, plus a recommendation; then <em>you</em> pick, because you own the decision and must be able to explain it.</p>
+
+<div class="prompt-diff">
+  <div class="weak">
+    <p>"Which should I use for the backend, Node or Python?"</p>
+  </div>
+  <div class="senior">
+    <p>"My backend must talk to FalkorDB and serve the existing Vite+React+TS cockpit; I know TS but not Python, and I have ~1 day. Lay out 2–3 backend options as a table: language, FalkorDB client maturity, what it costs me to learn, what it makes harder later. End with your recommendation and the single piece of evidence that would flip it. Do not decide for me — I will choose and write the decision record."</p>
+  </div>
+</div>
+
+<div class="quiz" data-answer="1" data-explain="A persistent data representation — node labels, relationship types, and property keys — is one of the things the handbook calls potentially expensive or effectively irreversible: every stored memory and every Cypher query in the README depends on it. Button colour and narration wording are cheap to revise.">
+  <p class="q">Which Track 02 decision is expensive-to-reverse and so deserves deliberate reasoning before you commit?</p>
+  <button type="button">The wording of your demo-video narration.</button>
+  <button type="button">The graph schema — node labels, relationship types, and property keys — that every stored memory and Cypher query depends on.</button>
+  <button type="button">The colour of a button in the cockpit UI.</button>
+</div>
+
+<div class="drill">
+  <p><strong>Run the rubric on your Node-vs-Python backend fork and write the decision record.</strong></p>
+  <ol class="steps">
+    <li>Answer the three questions in one line each: <em>Is it mandatory?</em> (no). <em>Reversible or expensive to reverse?</em> <em>What cheap evidence would change my mind?</em> — e.g. "confirm the FalkorDB Node client can run my Cypher; if it can, TS wins on one-language cost."</li>
+    <li>If the evidence is cheap, buy it: run one "hello graph" query from the Node client. Let the result decide, not the vibe. <a href="#hb">[SE Handbook]</a></li>
+    <li>Write the three-line <code>DECISION RECORD</code> from above into <code>docs/decisions.md</code> in the repo. It becomes the answer to "why did you pick X?" during judging.</li>
+  </ol>
+</div>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>Changeability (reversible vs expensive-to-reverse), decomposability, constraints vs objectives, and buying evidence. <a href="https://davisjam.github.io/model-based-agentic-software-engineering/book/se-handbook/software-engineering-handbook.pdf" id="hb">Model-Based Agentic Software Engineering — Software Engineering Handbook</a>.</p>
+  <p>Autonomy as a design decision; require confirmation before hard-to-reverse actions; observability makes failures debuggable. <a href="https://bigdataboutique.com/blog/everything-you-need-to-know-before-building-ai-agents" id="bb">Everything You Need to Know Before Building AI Agents — BigData Boutique</a>.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

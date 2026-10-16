@@ -1,0 +1,290 @@
+{
+  "graphsync_multi_agent_falkordb_memory_cockpit.tsx": {
+    "mtime": 1792064232.5347266,
+    "seen": 1792065319.5101247,
+    "ast_hash": "5f0663683fdca7da4ca24311b6f95e68",
+    "semantic_hash": "5f0663683fdca7da4ca24311b6f95e68"
+  },
+  "package.json": {
+    "mtime": 1792064858.881297,
+    "seen": 1792065319.5101275,
+    "ast_hash": "d010141abe5a1f7654ebd3a83a1fdb74",
+    "semantic_hash": "d010141abe5a1f7654ebd3a83a1fdb74"
+  },
+  "postcss.config.js": {
+    "mtime": 1792064871.5310152,
+    "seen": 1792065319.5101292,
+    "ast_hash": "442ee6f3f950b33482963958f133b78c",
+    "semantic_hash": "442ee6f3f950b33482963958f133b78c"
+  },
+  "src/graphsync_multi_agent_falkordb_memory_cockpit.tsx": {
+    "mtime": 1792064875.9615102,
+    "seen": 1792065319.5101297,
+    "ast_hash": "5f0663683fdca7da4ca24311b6f95e68",
+    "semantic_hash": "5f0663683fdca7da4ca24311b6f95e68"
+  },
+  "src/main.tsx": {
+    "mtime": 1792064873.8041487,
+    "seen": 1792065319.5101304,
+    "ast_hash": "c00ad50fb52768c270d32ace8d5ec67c",
+    "semantic_hash": "c00ad50fb52768c270d32ace8d5ec67c"
+  },
+  "tailwind.config.js": {
+    "mtime": 1792064869.4941914,
+    "seen": 1792065319.5101311,
+    "ast_hash": "e670962e2b33535d87ad9c4c1f5e435b",
+    "semantic_hash": "e670962e2b33535d87ad9c4c1f5e435b"
+  },
+  "tsconfig.json": {
+    "mtime": 1792064863.0652554,
+    "seen": 1792065319.5101316,
+    "ast_hash": "bb8cc7e17a4d369057ce3b8ec29db123",
+    "semantic_hash": "bb8cc7e17a4d369057ce3b8ec29db123"
+  },
+  "vite.config.ts": {
+    "mtime": 1792064860.9242768,
+    "seen": 1792065319.5101323,
+    "ast_hash": "12ed106bce6ace7e4180fa6cb56f0d5b",
+    "semantic_hash": "12ed106bce6ace7e4180fa6cb56f0d5b"
+  },
+  "index.html": {
+    "mtime": 1792064865.3852322,
+    "seen": 1792065319.510133,
+    "ast_hash": "0e338b70a2c75b891e20814c7646c244",
+    "semantic_hash": "0e338b70a2c75b891e20814c7646c244"
+  },
+  "assets/quiz.js": {
+    "mtime": 1792065841.4995408,
+    "seen": 1792126875.8706975,
+    "ast_hash": "f777a16fa1520a01d8105e4f6e9f0fd8",
+    "semantic_hash": "f777a16fa1520a01d8105e4f6e9f0fd8"
+  },
+  "assets/spec-card.js": {
+    "mtime": 1792077371.9157412,
+    "seen": 1792126875.8707008,
+    "ast_hash": "4f43f2078b9f6a3ebd5c640f4a6f0d4f",
+    "semantic_hash": "4f43f2078b9f6a3ebd5c640f4a6f0d4f"
+  },
+  "GLOSSARY.md": {
+    "mtime": 1792125945.0592268,
+    "seen": 1792126875.870716,
+    "ast_hash": "c19e58856ebf172a15d3f5ed1edd80e3",
+    "semantic_hash": "c19e58856ebf172a15d3f5ed1edd80e3"
+  },
+  "MISSION.md": {
+    "mtime": 1792065827.372216,
+    "seen": 1792126875.8707168,
+    "ast_hash": "31d59b09a789ca8b81998740da0ad8b0",
+    "semantic_hash": "31d59b09a789ca8b81998740da0ad8b0"
+  },
+  "NOTES.md": {
+    "mtime": 1792065831.37372,
+    "seen": 1792126875.8707178,
+    "ast_hash": "6cca9b24c84fe055139d5cc3f7e27a8a",
+    "semantic_hash": "6cca9b24c84fe055139d5cc3f7e27a8a"
+  },
+  "RESOURCES.md": {
+    "mtime": 1792077652.43368,
+    "seen": 1792126875.8707182,
+    "ast_hash": "53bf363c555693f7d5b0d28d869825ce",
+    "semantic_hash": "53bf363c555693f7d5b0d28d869825ce"
+  },
+  "assets/lesson-template.html": {
+    "mtime": 1792065848.5256805,
+    "seen": 1792126875.870719,
+    "ast_hash": "7f78ceccddba328405e505f910235516",
+    "semantic_hash": "7f78ceccddba328405e505f910235516"
+  },
+  "learning-records/0001-initial-state.md": {
+    "mtime": 1792065842.3355598,
+    "seen": 1792126875.8707194,
+    "ast_hash": "e996750f861b692a0bc02e905f5d6c0a",
+    "semantic_hash": "e996750f861b692a0bc02e905f5d6c0a"
+  },
+  "lessons/0001-falkordb-up-in-ten-minutes.html": {
+    "mtime": 1792065879.7303796,
+    "seen": 1792126875.87072,
+    "ast_hash": "443ab6f03b181e4b0a41b646b6e26927",
+    "semantic_hash": "443ab6f03b181e4b0a41b646b6e26927"
+  },
+  "lessons/0002-cypher-for-memory.html": {
+    "mtime": 1792065881.1824102,
+    "seen": 1792126875.8707206,
+    "ast_hash": "a0c8c7e0001b78692445f8f7fa24f39e",
+    "semantic_hash": "a0c8c7e0001b78692445f8f7fa24f39e"
+  },
+  "lessons/0003-three-tier-memory-model.html": {
+    "mtime": 1792065883.8050556,
+    "seen": 1792126875.8707213,
+    "ast_hash": "7cac8cdbb7ad4e29e39b5300ca07d515",
+    "semantic_hash": "7cac8cdbb7ad4e29e39b5300ca07d515"
+  },
+  "lessons/0004-episodic-conversation-history.html": {
+    "mtime": 1792065930.9304166,
+    "seen": 1792126875.8707218,
+    "ast_hash": "c598087559d196e6ed5b04593456bb43",
+    "semantic_hash": "c598087559d196e6ed5b04593456bb43"
+  },
+  "lessons/0005-semantic-memory-facts.html": {
+    "mtime": 1792065896.781795,
+    "seen": 1792126875.8707223,
+    "ast_hash": "8e05c8907544ed25dc1135923c5de3f6",
+    "semantic_hash": "8e05c8907544ed25dc1135923c5de3f6"
+  },
+  "lessons/0006-procedural-memory-playbooks.html": {
+    "mtime": 1792065890.608608,
+    "seen": 1792126875.870723,
+    "ast_hash": "68310b0f9fde479663d7186c75f02dab",
+    "semantic_hash": "68310b0f9fde479663d7186c75f02dab"
+  },
+  "lessons/0007-multi-agent-handoffs.html": {
+    "mtime": 1792065975.269148,
+    "seen": 1792126875.8707235,
+    "ast_hash": "fe35c97af0d71e4c56c2cadc85d55d98",
+    "semantic_hash": "fe35c97af0d71e4c56c2cadc85d55d98"
+  },
+  "lessons/0008-per-tenant-isolation.html": {
+    "mtime": 1792065968.7151237,
+    "seen": 1792126875.8707242,
+    "ast_hash": "90fa40dd136d8d6b83e51690f7589e65",
+    "semantic_hash": "90fa40dd136d8d6b83e51690f7589e65"
+  },
+  "lessons/0009-high-concurrency.html": {
+    "mtime": 1792065981.248118,
+    "seen": 1792126875.870725,
+    "ast_hash": "7f1cedc53fcae7643f4d72fc9a180916",
+    "semantic_hash": "7f1cedc53fcae7643f4d72fc9a180916"
+  },
+  "lessons/0010-wire-cockpit-to-falkordb.html": {
+    "mtime": 1792065982.8334346,
+    "seen": 1792126875.8707254,
+    "ast_hash": "33945d185ce72cbe4eaaae1f1ad91090",
+    "semantic_hash": "33945d185ce72cbe4eaaae1f1ad91090"
+  },
+  "lessons/0011-explainable-answers.html": {
+    "mtime": 1792065967.2330968,
+    "seen": 1792126875.8707259,
+    "ast_hash": "b5e5498a88e92f0aa4b9599fe0bb7eca",
+    "semantic_hash": "b5e5498a88e92f0aa4b9599fe0bb7eca"
+  },
+  "lessons/0012-shipping-the-submission.html": {
+    "mtime": 1792065969.1421313,
+    "seen": 1792126875.8707263,
+    "ast_hash": "acb0cf32bc0f8c92b022e0e9b21e7cc8",
+    "semantic_hash": "acb0cf32bc0f8c92b022e0e9b21e7cc8"
+  },
+  "lessons/0101-the-engineers-prompt.html": {
+    "mtime": 1792077434.708795,
+    "seen": 1792126875.870727,
+    "ast_hash": "460a2b50b70ea62b771484a7381887f1",
+    "semantic_hash": "460a2b50b70ea62b771484a7381887f1"
+  },
+  "lessons/0102-think-in-systems.html": {
+    "mtime": 1792077663.044917,
+    "seen": 1792126875.870728,
+    "ast_hash": "70928039201c53b91d6d4a550717d0da",
+    "semantic_hash": "70928039201c53b91d6d4a550717d0da"
+  },
+  "lessons/0103-define-done-spec-cards.html": {
+    "mtime": 1792100171.697939,
+    "seen": 1792126875.8707285,
+    "ast_hash": "f86bee714668edd1f130f4c69938cbf6",
+    "semantic_hash": "f86bee714668edd1f130f4c69938cbf6"
+  },
+  "lessons/0104-engineer-the-context.html": {
+    "mtime": 1792077437.6798413,
+    "seen": 1792126875.8707292,
+    "ast_hash": "9c0c33f94745694a7f8377a5ab390f7d",
+    "semantic_hash": "9c0c33f94745694a7f8377a5ab390f7d"
+  },
+  "lessons/0105-decompose-and-contracts.html": {
+    "mtime": 1792077469.1043124,
+    "seen": 1792126875.8707297,
+    "ast_hash": "06d89fabb5ae566b5e73d2fc8413ea62",
+    "semantic_hash": "06d89fabb5ae566b5e73d2fc8413ea62"
+  },
+  "lessons/0106-debug-like-a-scientist.html": {
+    "mtime": 1792077551.3092961,
+    "seen": 1792126875.8707302,
+    "ast_hash": "e9253d7c2fd70d09c479dc7216305059",
+    "semantic_hash": "e9253d7c2fd70d09c479dc7216305059"
+  },
+  "lessons/0107-verify-every-step.html": {
+    "mtime": 1792077540.3691058,
+    "seen": 1792126875.8707306,
+    "ast_hash": "c2707c4e1d15e6a183359f482e82f28d",
+    "semantic_hash": "c2707c4e1d15e6a183359f482e82f28d"
+  },
+  "lessons/0108-decide-under-uncertainty.html": {
+    "mtime": 1792077585.586825,
+    "seen": 1792126875.8707316,
+    "ast_hash": "c4c9f2153abfe8d8e42850813757e32b",
+    "semantic_hash": "c4c9f2153abfe8d8e42850813757e32b"
+  },
+  "lessons/0109-roles-and-autonomy.html": {
+    "mtime": 1792077555.7554674,
+    "seen": 1792126875.870732,
+    "ast_hash": "e439a097f00189ceabc6bc9c72adfcb3",
+    "semantic_hash": "e439a097f00189ceabc6bc9c72adfcb3"
+  },
+  "lessons/0110-write-for-future-you.html": {
+    "mtime": 1792077567.391609,
+    "seen": 1792126875.8707325,
+    "ast_hash": "d6333a1bc424a01a5df10dfad8ba863a",
+    "semantic_hash": "d6333a1bc424a01a5df10dfad8ba863a"
+  },
+  "reference/CURRICULUM.html": {
+    "mtime": 1792101501.9838634,
+    "seen": 1792126875.870733,
+    "ast_hash": "0739f86cb699f08321b134f3d49949a6",
+    "semantic_hash": "0739f86cb699f08321b134f3d49949a6"
+  },
+  "reference/concurrency.html": {
+    "mtime": 1792065998.3236458,
+    "seen": 1792126875.8707335,
+    "ast_hash": "0f5ef36e99ae5dcda8676198b4a973cc",
+    "semantic_hash": "0f5ef36e99ae5dcda8676198b4a973cc"
+  },
+  "reference/cypher-cheatsheet.html": {
+    "mtime": 1792065912.6170566,
+    "seen": 1792126875.8707345,
+    "ast_hash": "8f96a71757707391608b612700b59391",
+    "semantic_hash": "8f96a71757707391608b612700b59391"
+  },
+  "reference/exit-criteria.html": {
+    "mtime": 1792100152.859725,
+    "seen": 1792126875.870735,
+    "ast_hash": "07e65d4920463a9318ba9fd863310ad7",
+    "semantic_hash": "07e65d4920463a9318ba9fd863310ad7"
+  },
+  "reference/features.html": {
+    "mtime": 1792101497.697598,
+    "seen": 1792126875.8707361,
+    "ast_hash": "167ee191f36b0f4f6fc59194f73a42d9",
+    "semantic_hash": "167ee191f36b0f4f6fc59194f73a42d9"
+  },
+  "reference/graph-schema.html": {
+    "mtime": 1792065906.7839394,
+    "seen": 1792126875.8707368,
+    "ast_hash": "3688b4a5736833e9f730712dd0c5afe9",
+    "semantic_hash": "3688b4a5736833e9f730712dd0c5afe9"
+  },
+  "reference/prompt-playbook.html": {
+    "mtime": 1792100170.4649246,
+    "seen": 1792126875.870741,
+    "ast_hash": "cfa23645fe7de03594e53e8ef84decd1",
+    "semantic_hash": "cfa23645fe7de03594e53e8ef84decd1"
+  },
+  "reference/track02-checklist.html": {
+    "mtime": 1792065968.435923,
+    "seen": 1792126875.8707416,
+    "ast_hash": "6d8a5c620d80c07289078048c52d2f8a",
+    "semantic_hash": "6d8a5c620d80c07289078048c52d2f8a"
+  },
+  "architecture-diagram.svg": {
+    "mtime": 1792105464.4197345,
+    "seen": 1792126875.8707423,
+    "ast_hash": "632b58f2aa95a1763e9aee38b5acde7e",
+    "semantic_hash": "632b58f2aa95a1763e9aee38b5acde7e"
+  }
+}

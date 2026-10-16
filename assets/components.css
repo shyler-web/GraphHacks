@@ -1,0 +1,183 @@
+/* Shared components for the "Engineer's Prompt" series.
+   Link AFTER assets/lesson.css. */
+
+/* ---- Habit banner: the senior habit a module installs ---- */
+.habit {
+  font-family: var(--sans);
+  font-size: 0.98rem;
+  background: #eef2f7;
+  border-left: 4px solid #33507a;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  margin: 1.5rem 0;
+}
+.habit::before {
+  content: "The habit";
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #33507a;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+/* ---- Drill block: the thing to do on your own repo ---- */
+.drill {
+  font-family: var(--sans);
+  font-size: 0.96rem;
+  background: #fff8ec;
+  border: 1px solid #e6cfa6;
+  border-radius: 8px;
+  padding: 1.1rem 1.3rem;
+  margin: 1.6rem 0;
+}
+.drill::before {
+  content: "Drill on your project";
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9a6d2d;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* ---- Prompt diff: weak vs senior prompt ---- */
+.prompt-diff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin: 1.6rem 0;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+}
+.prompt-diff > div {
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--rule);
+}
+.prompt-diff .weak {
+  background: var(--bad-soft);
+  border-color: #e3b6b8;
+}
+.prompt-diff .senior {
+  background: var(--ok-soft);
+  border-color: #a9d5b6;
+}
+.prompt-diff .weak::before {
+  content: "Weak prompt";
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--bad);
+  margin-bottom: 0.4rem;
+}
+.prompt-diff .senior::before {
+  content: "Senior prompt";
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--ok);
+  margin-bottom: 0.4rem;
+}
+.prompt-diff p { margin: 0; }
+.prompt-diff code { background: rgba(255,255,255,0.6); }
+@media (max-width: 34rem) {
+  .prompt-diff { grid-template-columns: 1fr; }
+}
+
+/* ---- Spec-card builder widget ---- */
+.specbuilder {
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1.2rem 1.3rem;
+  margin: 1.6rem 0;
+  background: #fff;
+}
+.specbuilder h3 { margin: 0 0 0.8rem; font-size: 1rem; }
+.specbuilder label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0.7rem 0 0.25rem;
+}
+.specbuilder input,
+.specbuilder textarea {
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  background: var(--paper);
+  resize: vertical;
+}
+.specbuilder textarea { min-height: 2.4rem; }
+.specbuilder .spec-out {
+  margin-top: 1rem;
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  white-space: pre-wrap;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  min-height: 6rem;
+}
+.specbuilder .copybtn {
+  margin-top: 0.6rem;
+  font: inherit;
+  font-weight: 700;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+.specbuilder .copybtn:hover { background: var(--accent); }
+
+/* ---- Self-check checklist ---- */
+.selfcheck { font-family: var(--sans); font-size: 0.94rem; }
+.selfcheck li { margin: 0.5rem 0; }
+
+/* ---- Status pills: reuse across dashboards / insight pages ---- */
+.status {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.status.done     { background: var(--ok-soft);   color: var(--ok);   border-color: #a9d5b6; }
+.status.partial  { background: #fbf0d6;          color: #8a6a1f;     border-color: #ecd9a6; }
+.status.todo     { background: var(--bad-soft);  color: var(--bad);  border-color: #e3b6b8; }
+.status.verify   { background: #e7eef7;          color: #33507a;     border-color: #c3d3e6; }
+
+/* ---- Finding block: a discovered fact with severity ---- */
+.finding {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--ink-soft);
+  border-radius: 6px;
+  padding: 0.85rem 1.1rem;
+  margin: 1rem 0;
+  background: #fff;
+}
+.finding.hi   { border-left-color: var(--bad); }
+.finding.med  { border-left-color: #c8922a; }
+.finding.lo   { border-left-color: var(--ok); }
+.finding p:last-child { margin-bottom: 0; }

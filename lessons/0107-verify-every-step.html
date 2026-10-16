@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0107 — Verify Every Step</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0107 · The Engineer's Prompt</p>
+<h1>Verify Every Step</h1>
+<p class="lede">An agent doing ten steps that you check only at the end is an agent you cannot trust. Verify immediately after every state-changing action, because errors compound: a 5% per-step error rate becomes roughly a 40% chance of a wrong result by step ten.</p>
+
+<p class="win">By the end you can <em>demand evidence after each agent action instead of at the end of the session</em>, evidenced by <em>a "verify:" line on every step and a health-check command you run after every change</em>.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../reference/prompt-playbook.html">Prompt playbook</a>
+  <a href="0106-debug-like-a-scientist.html">Prev</a>
+  <a href="0108-decide-under-uncertainty.html">Next →</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>Your Track 02 build is a chain: write a Cypher <code>MERGE</code>, wire the route, read from the cockpit, record a handoff. If the <code>MERGE</code> in step one returns a malformed node, every later step inherits the error — the UI shows garbage, the handoff ledger points at nothing, and you discover it all at the demo. Checking only at the end means five steps to redo. Checking after each step means one.</p>
+
+<div class="habit">
+  No action is finished until a command has proven it. Attach a "verify:" line to every step of the task spec.
+</div>
+
+<h2>The idea</h2>
+<p><a href="#src">10xdev's seventh mistake</a> names this the "silent killer of agent-assisted builds": "The agent does 10 steps. Step 3 did something wrong. Steps 4–10 built on top of the error. You find out at step 10 that everything since step 3 needs to be redone." The fix it prescribes is exact — "every state-changing action has a verification step immediately after. Not a big end-of-session review. A quick, specific check right after the action":</p>
+<blockquote>Agent writes a file → verify the file exists and has the expected content. Agent runs a migration → verify the schema matches expectations. Agent registers a component → verify it appears in the registry.</blockquote>
+<p>The same source gives the instruction for the prompt itself: "Add a 'verify:' line to every step in your task spec. It should be a specific, checkable assertion — not 'looks good' but 'file X exists and contains Y.'"</p>
+<p>Why it compounds: if each step has an independent 5% chance of a silent error, the chance the whole run is clean is <code>0.95<sup>10</sup> ≈ 0.60</code> — a 40% chance something is wrong by step ten, and you won't know where. Verify-per-step keeps every failure local, so a fix costs one step instead of the session.</p>
+<p>This is <strong>evidence before assertions</strong>. When the agent says "done," that is a claim; the command and its raw output are the evidence. "Done" without the output is a wish — the same failure mode as an under-specified task.</p>
+
+<pre><code># Translate each action into a check that prints proof.
+# write file        -> test -f src/memory/contract.ts && grep -q recall_turns src/memory/contract.ts
+# run migration     -> CALL db.labels()                       # schema claims exist
+# wire endpoint     -> curl -s localhost:5173/api/recall | jq .
+# wire FalkorDB     -> npm run health                          # prints the node count</code></pre>
+
+<p>Note every check returns something an eye can read: an exit code, a row, JSON. "Verify:" lines never read "looks correct."</p>
+
+<div class="prompt-diff">
+  <div class="weak">
+    <p>"Add the FalkorDB read and tell me when done."</p>
+  </div>
+  <div class="senior">
+    <p>Add it, then run <code>npm run dev</code> and paste the exact output showing the node returned; do not say done until the command proves it.</p>
+  </div>
+</div>
+
+<div class="quiz" data-answer="2" data-explain="Per-action verification is a quick, specific check right after each state-changing action, so an error is caught while the context that caused it is still fresh and only one step must be redone. A big end-of-session review lets errors compound across every later step; 'trust but confirm at the end' is just end-of-session review in disguise; and asking the agent if it is confident is an assertion, not evidence.">
+  <p class="q">The agent has just written the Cypher <code>MERGE</code> for <code>write_turn</code>. What does "verify every step" require right now?</p>
+  <button type="button">Let the agent finish all remaining steps, then review the whole diff once at the end.</button>
+  <button type="button">Ask the agent whether it is confident the query is correct.</button>
+  <button type="button">Run the query and read its output — e.g. confirm one node exists with the expected label and property — before moving to the next step.</button>
+</div>
+
+<div class="drill">
+  <p><strong>Add a health-check command to your project and use it after every change.</strong></p>
+  <ol class="steps">
+    <li>Add a script (e.g. <code>scripts/health.ts</code>, wired as <code>"health"</code> in <code>package.json</code>) that connects to FalkorDB and prints a count of the nodes the demo cares about — e.g. <code>MATCH (n) RETURN count(n) AS nodes</code>.</li>
+    <li>Run it now: <code>npm run health</code>. Confirm it prints a number (a fresh graph may print <code>0</code>), proving the connection works before you rely on it.</li>
+    <li>Make it a habit: after every agent action that touches the graph, the route, or the UI, run <code>npm run health</code> and paste the output. Do not accept "done" without it.</li>
+    <li>Add a "verify:" line to each step of your next task spec — a specific, checkable assertion, never "looks good."</li>
+  </ol>
+</div>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>Mistake 6, "You're Not Verifying After Each Action — Only at the End," and the "verify:"-line instruction. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/" id="src">7+ Things Every Developer Gets Wrong About AI Agents in 2026 — 10xdev.blog</a>.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

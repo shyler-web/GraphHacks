@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-ssr/
+*.local
+
+# env + secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# logs
+*.log
+npm-debug.log*
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# graphify cache (regenerated; keep graph.json + reports)
+graphify-out/cache/
+graphify-out/.graphify_*
+
+# local db / containers
+*.rdb
+data/

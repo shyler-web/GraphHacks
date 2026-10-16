@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track 02 Check-off List</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Agent Memory and Coordination</p>
+<h1>Track 02 Check-off List</h1>
+<p class="lede">The scannable page. For each key-focus point, the concrete evidence to run, screenshot, or put on screen; then the rule&nbsp;10 submission items, the rule&nbsp;3 “real work” test, and a two-minute demo shot list. Print it and tick boxes.</p>
+
+<p class="nav"><a href="../reference/CURRICULUM.html">← Curriculum</a> <a href="insight.html">Insight page</a> <a href="../GLOSSARY.md">Glossary</a></p>
+
+<h2>1 · Key-focus points → the evidence that proves each one</h2>
+<p>Track 02’s key focus, quoted from the hackathon page: <em>“Episodic, semantic, and procedural memory · Persistent conversation history · Shared state and handoffs between agents · High-concurrency reads and writes · Separate memory per user or tenant.”</em> <a href="https://www.wemakedevs.org/hackathons/falkordb">[event page]</a></p>
+
+<table>
+  <tr>
+    <th>Key-focus point</th>
+    <th>What it means (per the Glossary)</th>
+    <th>Concrete evidence to show</th>
+  </tr>
+  <tr>
+    <td>Episodic memory</td>
+    <td>A record of specific past interactions, stored as timestamped event nodes linked to the entities involved, so an agent can recall “what happened last time.”</td>
+    <td>Query the graph for a past session’s events and screenshot the returned event nodes with timestamps. Show the Cypher that created them (<code>MERGE</code>-based write, idempotent).</td>
+  </tr>
+  <tr>
+    <td>Semantic memory</td>
+    <td>Durable factual knowledge about the domain — entities, attributes, and their relationships — independent of any single interaction.</td>
+    <td>Show a fact extracted from a message becoming connected entity nodes and edges in one query. Screenshot a traversal that answers a question from the fact graph, not from loose text.</td>
+  </tr>
+  <tr>
+    <td>Procedural memory</td>
+    <td>Stored tool-use patterns and successful query strategies, represented as reusable workflow subgraphs an agent can re-execute.</td>
+    <td>Replay a workflow subgraph in the demo: run a stored tool-use pattern once, show it stored, then re-execute it on a new input. Screenshot the subgraph in FalkorDB Browser.</td>
+  </tr>
+  <tr>
+    <td>Persistent conversation history</td>
+    <td>Agent memory: the persistent, queryable state an agent reads and writes across sessions so it does not start from zero each time.</td>
+    <td>End a session, restart the app, ask a follow-up that depends on the earlier turn, and screenshot the recalled history. Restart must not clear the graph (real FalkorDB, not in-process state).</td>
+  </tr>
+  <tr>
+    <td>Shared state and handoffs between agents</td>
+    <td>Handoff: the transfer of state and responsibility from one agent to another, recorded in the graph so the receiving agent knows what was done and why.</td>
+    <td>Run a two-agent flow where agent B reads agent A’s recorded state. Screenshot the handoff ledger — the node/edge recording who handed off, what and why — and the query agent B ran to read it.</td>
+  </tr>
+  <tr>
+    <td>High-concurrency reads and writes</td>
+    <td>Many agents reading and writing agent memory at once without losing or corrupting state; writes stay idempotent via <code>MERGE</code>.</td>
+    <td>Run a concurrent writer test (many parallel writes via one client), then query the count and assert no duplicates / no lost writes. Screenshot the test output and the reconciled graph state.</td>
+  </tr>
+  <tr>
+    <td>Separate memory per user or tenant</td>
+    <td>Multi-graph / multi-tenant topology: FalkorDB’s ability to hold thousands of isolated graphs in one instance, so each user or tenant gets a separate memory graph without a separate deployment.</td>
+    <td>Show two named graphs in one FalkorDB instance. Query user A’s graph and user B’s graph and screenshot that neither sees the other’s nodes. State the graph-name → tenant mapping.</td>
+  </tr>
+</table>
+
+<div class="callout"><strong>Judging note.</strong> The event’s own “work the graph has to do” list — follow connections, remember across sessions, share state between agents, connect people/projects/decisions, show the path behind an answer — is the framing judges use. Every row above should be visible in the video, not just in the repo. <a href="https://www.wemakedevs.org/hackathons/falkordb">[event page]</a></div>
+
+<h2>2 · Rule 10 submission items</h2>
+<p>Quoted from the rules: <em>“Every submission must include: A public source-code repository · A README with setup instructions and your graph data model · The Cypher queries or graph algorithms the product depends on · A demo video showing the working project · A live deployment, or complete local setup instructions if it cannot be deployed · The track you are entering.”</em> <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">[rules, rule&nbsp;10]</a></p>
+
+<table>
+  <tr><th>Rule 10 item</th><th>Done?</th><th>Where it lives in the repo</th></tr>
+  <tr><td>Public source-code repository</td><td>☐</td><td>Repo root; public visibility confirmed. Main FalkorDB implementation must be new work done during the event (rule&nbsp;8–9).</td></tr>
+  <tr><td>README with setup instructions <em>and</em> graph data model</td><td>☐</td><td><code>README.md</code> — setup section + the drawn data model. Keep the model in sync with <code>reference/graph-schema.html</code>.</td></tr>
+  <tr><td>The Cypher queries / graph algorithms the product depends on</td><td>☐</td><td>Query strings in the source <em>and</em> collected in the README (or a linked <code>queries.md</code>). These are the load-bearing queries, not example snippets.</td></tr>
+  <tr><td>Demo video showing the working project</td><td>☐</td><td>Link in README. Follow the shot list in §4 below.</td></tr>
+  <tr><td>Live deployment, or complete local setup instructions</td><td>☐</td><td>Deployment URL in README, <em>or</em> a full Docker-based local setup that reaches a running demo from a clean machine.</td></tr>
+  <tr><td>The track you are entering</td><td>☐</td><td>Named on the submission form and in the README: <strong>Track 02 — Agent Memory and Coordination</strong> (rule&nbsp;5: name every track).</td></tr>
+</table>
+
+<h2>3 · The “real work” test (rule 3)</h2>
+<p>Rule 3, quoted: <em>“The graph has to do real work. A visualisation drawn on top of ordinary storage does not qualify: if the product still works once FalkorDB is taken out, the graph is decoration rather than the thing the product runs on.”</em> <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">[rules, rule&nbsp;3]</a></p>
+<blockquote>If FalkorDB were removed, would the product still work?</blockquote>
+<p><strong>Pass condition:</strong> with FalkorDB stopped, the product <em>fails</em> — memory recall, handoffs, and isolation all return nothing, because the graph is where agent memory lives. If it keeps working from a cache or a JSON file, the graph is decoration. Say this out loud in the video: point at the running FalkorDB instance and state that removing it breaks the demo.</p>
+
+<h2>4 · Two-minute demo shot list</h2>
+<ol class="steps">
+  <li><strong>0:00–0:15 — Frame it.</strong> One sentence: a multi-agent system whose memory is a real FalkorDB graph. Show the FalkorDB container/browser running.</li>
+  <li><strong>0:15–0:35 — Three-tier memory.</strong> Write one turn, show episodic, semantic, and procedural memory landing in the graph as nodes and edges. Open FalkorDB Browser on the data model.</li>
+  <li><strong>0:35–0:55 — Persistence.</strong> Restart the app; ask a follow-up that depends on the earlier session; the answer recalls the stored history.</li>
+  <li><strong>0:55–1:15 — Handoff.</strong> Agent A finishes work; agent B reads A’s recorded handoff and continues. Screenshot the handoff ledger.</li>
+  <li><strong>1:15–1:35 — Concurrency.</strong> Fire the parallel-writer test; show the output and the deduplicated graph state (idempotent <code>MERGE</code> writes).</li>
+  <li><strong>1:35–1:50 — Isolation.</strong> Switch tenant; show the second graph sees none of the first tenant’s nodes.</li>
+  <li><strong>1:50–2:00 — Real work + close.</strong> Say the rule-3 line: remove FalkorDB and the product breaks. Point to repo, README, queries, and the track name.</li>
+</ol>
+
+<div class="win">Every key-focus point ticked, all six rule-10 items ticked, the rule-3 line said on camera, and a two-minute video that shows all five memory behaviours in the running system.</div>
+
+<h2>Sources</h2>
+<div class="source">
+  <h3>Cited</h3>
+  <p>
+    <a href="https://www.wemakedevs.org/hackathons/falkordb">WeMakeDevs · Graph Hacks event page</a> — Track 02 key-focus list, “work the graph has to do,” FAQ (FalkorDB mandatory, deployment preference).<br>
+    <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">WeMakeDevs · Graph Hacks rules</a> — rule 3 (“real work”), rule 5 (name every track), rule 10 (submission items), rules 8–9 (new work), rule 12 (explain your work).
+  </p>
+  <p>Terms in §1 are used exactly as defined in this workspace’s <a href="../GLOSSARY.md">GLOSSARY.md</a>.</p>
+</div>
+
+<footer>
+  <p>Track 02 Check-off List · <a href="../reference/CURRICULUM.html">back to curriculum</a> · every claim cites its primary source.</p>
+</footer>
+</body>
+</html>

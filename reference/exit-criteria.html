@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deriving Exit Criteria</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">The Engineer's Prompt · Reference</p>
+<h1>Deriving Exit Criteria</h1>
+<p class="lede">The exit criterion is the highest-leverage line in a spec card. This is the recipe for producing one for any spec, every time.</p>
+
+<nav class="nav">
+  <a href="CURRICULUM.html">← Curriculum</a>
+  <a href="prompt-playbook.html">Prompt playbook</a>
+  <a href="../lessons/0103-define-done-spec-cards.html">Lesson 0103</a>
+</nav>
+
+<h2>The one rule</h2>
+<div class="habit">
+An exit criterion is <strong>what an outside observer can check, pass/fail, without reading your code.</strong> If verifying it requires opening the source, it is an implementation detail, not an exit criterion.
+</div>
+
+<h2>The derivation recipe</h2>
+<ol class="steps">
+  <li><strong>Restate the "what" as user-visible behaviour.</strong> "Wire FalkorDB" is activity; "the app shows memory stored in FalkorDB" is behaviour.</li>
+  <li><strong>Name the observer.</strong> You? A judge? A test script? The observer decides what counts as observable.</li>
+  <li><strong>Write it as Given / When / Then.</strong> <code>Given &lt;state&gt;, when &lt;one action&gt;, then &lt;one observable result&gt;.</code></li>
+  <li><strong>Attach the command that produces the evidence.</strong> A check you cannot run is an opinion. State the exact command and the expected output.</li>
+  <li><strong>Add the load-bearing check and one failure case.</strong> For Track 02, every feature needs proof FalkorDB does real work (rule 3), plus what happens when the graph is missing.</li>
+</ol>
+
+<h2>The template</h2>
+<pre><code>GIVEN  &lt;starting state&gt;
+WHEN   &lt;one action&gt;
+THEN   &lt;one observable result&gt;
+PROOF  &lt;the exact command and its expected output&gt;
+PLUS   &lt;the FalkorDB-is-load-bearing check&gt;</code></pre>
+
+<h2>Worked examples — your Track 02 specs</h2>
+<table>
+  <tr><th>Spec</th><th>Exit criterion</th><th>Proof</th></tr>
+  <tr><td>Episodic memory</td><td>Given a fresh tenant, when I send two messages, then reloading shows both Turns in order</td><td><code>npm run health</code> reports <code>2 turns</code></td></tr>
+  <tr><td>Persistent history</td><td>Given prior turns exist, when I reopen the app in a new session, then the history is still there</td><td>restart server → reload → turns present</td></tr>
+  <tr><td>Semantic memory</td><td>Given a message "Priya leads Project Atlas", when processed, then a Fact links Priya to Atlas</td><td>Cypher: <code>MATCH (p)-[r]->(a) RETURN p,r,a</code></td></tr>
+  <tr><td>Procedural memory</td><td>Given a stored workflow, when the same task reappears, then the agent fetches the stored steps instead of re-deriving</td><td>query returns the Workflow node</td></tr>
+  <tr><td>Handoff ledger</td><td>Given agent A finishes, when it hands to B, then a HANDED_TO edge with reason + timestamp exists</td><td>Cypher returns the edge</td></tr>
+  <tr><td>Per-tenant isolation</td><td>Given tenant A has 5 turns, when I load tenant B, then B sees 0</td><td>query both graphs, compare counts</td></tr>
+  <tr><td>Wiring the UI</td><td>Given a node created directly in FalkorDB, when I load the cockpit, then it appears</td><td><code>docker exec … cypher</code> → reload</td></tr>
+  <tr><td><strong>Rule 3 — real work</strong></td><td>Given FalkorDB is stopped, when I send a message, then the app errors — it does <em>not</em> silently keep working</td><td>stop container → send → expect error</td></tr>
+</table>
+
+<h2>Anti-patterns</h2>
+<table>
+  <tr><th>Bad exit criterion</th><th>Why</th><th>Fixed</th></tr>
+  <tr><td>"Wire up FalkorDB"</td><td>Activity, not a check</td><td>"Loading the app shows a node that exists in FalkorDB"</td></tr>
+  <tr><td>"Uses MERGE"</td><td>Implementation detail, not behaviour</td><td>"Re-running the write twice leaves exactly one node"</td></tr>
+  <tr><td>"Memory works"</td><td>Unverifiable</td><td>Rewrite as Given / When / Then</td></tr>
+  <tr><td>One criterion for the whole feature</td><td>Too big to be one check</td><td>Split the spec, or define the interface first (Lesson 0105)</td></tr>
+</table>
+
+<div class="habit">
+If you cannot write a single Given / When / Then for a spec, the spec is <strong>either too vague or too big</strong>. That is a signal — not a failure. Split it, or define the contract first.
+</div>
+
+<div class="drill">
+Take the next Track 02 feature you were about to build. Write its exit criterion with the template — one observable line + one command. If it takes more than one line, split the spec. Then hand the spec card to the agent and refuse to accept "done" without the proof output.
+</div>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Spec-driven development and the exit criterion — <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">"7+ Things Every Developer Gets Wrong About AI Agents in 2026"</a>. The "graph must do real work" rule — <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">Graph Hacks rules, rule 3</a>.</p>
+</div>
+
+<footer>
+  <p>Part of the GraphHacks Track 02 mission. Stuck? Ask your teacher in opencode.</p>
+</footer>
+</body>
+</html>

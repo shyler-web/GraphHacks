@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Engineer's Prompt Playbook</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Agent Memory and Coordination · Reference</p>
+<h1>The Engineer's Prompt Playbook</h1>
+<p class="lede">The compressed capstone of <em>The Engineer's Prompt</em> course. One page you keep open: the build loop, the spec-card, the context budget, the debugging loop, the decision rubric, the autonomy tiers, and the weak&rarr;senior prompt library. Every claim cites a primary source. Print it and pin it.</p>
+
+<nav class="nav">
+  <a href="CURRICULUM.html">Curriculum</a>
+  <a href="exit-criteria.html">Deriving exit criteria</a>
+  <a href="../lessons/0001-falkordb-up-in-ten-minutes.html">0001</a>
+  <a href="../lessons/0003-three-tier-memory-model.html">0003</a>
+  <a href="../lessons/0006-procedural-memory-playbooks.html">0006</a>
+  <a href="../lessons/0007-multi-agent-handoffs.html">0007</a>
+  <a href="../lessons/0012-shipping-the-submission.html">0012</a>
+  <a href="track02-checklist.html">Track 02 check-off</a>
+  <a href="cypher-cheatsheet.html">Cypher</a>
+  <a href="graph-schema.html">Graph model</a>
+  <a href="../GLOSSARY.md">Glossary</a>
+</nav>
+
+<div class="callout"><strong>The one idea.</strong> Prompting is the wrong lever. What you control is <strong>context</strong> — what the model has access to when it runs — and the research behind this page says context engineering beats prompt phrasing by a wide margin (teams that build context pipelines see 20–45% faster cycles). <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a> This playbook is mostly a context-control manual wearing a prompting costume.</div>
+
+<h2>1 · The Build Loop</h2>
+<p>Every task — a FalkorDB write pattern, a React component, a README — moves through the same six gates. One line each. Skipping a gate is how you spend a whole hackathon hour rebuilding something.</p>
+<table>
+  <tr><th>Gate</th><th>What it means</th><th>Exit when…</th></tr>
+  <tr><td><strong>1 · Plan</strong></td><td>Say what you want in one sentence and what "done" verifiably looks like.</td><td>You can state the exit criterion without hedging.</td></tr>
+  <tr><td><strong>2 · Spec</strong></td><td>Write the 5-line spec card (§2). Three minutes that saves hours.</td><td>All five lines are filled; the check is a specific assertion.</td></tr>
+  <tr><td><strong>3 · Context</strong></td><td>Load the ALWAYS bucket and only the task's ON-DEMAND files (§3).</td><td>The agent has the goal, the constraints, and the touching code — nothing else.</td></tr>
+  <tr><td><strong>4 · Build</strong></td><td>The agent executes the spec inside its autonomy tier (§6).</td><td>The build completes or the agent stops and reports a blocker (§4).</td></tr>
+  <tr><td><strong>5 · Verify</strong></td><td>Run the spec's check immediately — not at the end of the session.</td><td>The assertion passes, with output you can point at.</td></tr>
+  <tr><td><strong>6 · Commit</strong></td><td>Commit with a message that carries the decision and the why.</td><td><code>git log</code> alone briefs the next session's agent. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></td></tr>
+</table>
+<div class="habit">Never let the agent build on an unverified step. Bug at step 3 plus steps 4–10 on top = redo all ten; verify per action and it is a one-step fix. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></div>
+
+<h2>2 · Spec-Card Template</h2>
+<p>An under-specified task is a wish, not a task: the agent either stops at the first ambiguity, invents requirements, or does something technically correct and wrong for your context. The fix is a mini-spec before every agent task. Teams using spec-driven tasks report 3–10× higher first-pass success. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></p>
+<p>The five lines — copy them verbatim:</p>
+<pre><code>1. What it builds      — one sentence.
+2. Exit criterion      — a specific, verifiable check (not "it works").
+3. Scope boundary      — what is explicitly NOT being built.
+4. Locked decisions    — what the agent may not reopen.
+5. Verification step   — the exact command/assertion that proves done.</code></pre>
+
+<h3>Worked example A — a code task (Track 02)</h3>
+<div class="specbuilder">
+  <h3>Spec card · episodic turn write</h3>
+  <pre><code>1. What it builds    Persist one conversation turn as an episodic Turn node
+                     linked to its User in FalkorDB, idempotently.
+2. Exit criterion    Running the write twice for the same turnId leaves
+                     exactly ONE Turn node, count == 1.
+3. Scope boundary    No semantic extraction, no UI. Write path only.
+4. Locked decisions  MERGE per entity (never CREATE for turns); property
+                     keys are camelCase (turnId, role, text, at).
+5. Verification step `MATCH (t:Turn {turnId:$id}) RETURN count(t)` returns 1
+                     after two calls. Paste the output.</code></pre>
+</div>
+
+<h3>Worked example B — a research task</h3>
+<div class="specbuilder">
+  <h3>Spec card · handoff pattern research</h3>
+  <pre><code>1. What it builds    A short, sourced answer: does a standard shared multi-agent
+                     handoff pattern exist over FalkorDB? (Yes/no + evidence.)
+2. Exit criterion    ≥3 sources consulted; each claim has a URL; an explicit
+                     "no trusted source found" line if none exists.
+3. Scope boundary    Coordination/handoff only — NOT general agent memory.
+4. Locked decisions  Prefer primary/docs sources over blog summaries; no
+                     parametric guesses dressed as findings.
+5. Verification step Quotes + links returned; I can open each one.</code></pre>
+</div>
+
+<div class="drill">Take your next FalkorDB task — wiring the cockpit to the real graph — and write its spec card before you type a prompt. If line 2 is not a runnable check, rewrite it until it is.</div>
+
+<h2>3 · Context Budget</h2>
+<p>Too little context and the agent hallucinates; too much and it loses focus and pulls details from the wrong file. Control the budget with three buckets. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></p>
+<table>
+  <tr><th>Bucket</th><th>Contents</th><th>When</th></tr>
+  <tr><td><strong>ALWAYS</strong></td><td>Project structure &amp; layer rules · current phase goal + exit criteria · locked decisions the agent cannot reopen · current health status.</td><td>Injected at session start, every session.</td></tr>
+  <tr><td><strong>ON DEMAND</strong></td><td>Relevant function contracts · adjacent code the task touches · open issues for this area · the specific Cypher/queries in play.</td><td>Loaded per task, only what that task needs.</td></tr>
+  <tr><td><strong>NEVER</strong></td><td>The entire codebase · resolved issues from past phases · completed phase specs · the whole chat history.</td><td>Never dumped wholesale.</td></tr>
+</table>
+<div class="habit">Brief the agent like a good manager: the goal, the constraints, the relevant background — not a 200-page document that says "figure it out." <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></div>
+
+<h2>4 · The Debugging Loop</h2>
+<p>Guess-and-check has three baked-in failure modes: <em>tunnel vision</em> (you chase the first plausible cause), <em>fixing before reproducing</em> (symptom moves, you declare victory), and <em>no memory</em> (each attempt overwrites the last). A method attacks all three. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></p>
+<ol class="steps">
+  <li><strong>Reproduce before you theorize.</strong> Write down expected, observed, and the minimal reliable repro. No confirmed repro, no fix — the most common AI-debugging failure is a confident patch for a bug nobody reproduced. Tell the agent: <em>do not propose a fix until the repro is confirmed.</em> <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></li>
+  <li><strong>Force three ranked hypotheses.</strong> Even when one feels obvious — the second and third are where the bug usually hides. Each gets a <strong>claim</strong>, a <strong>test</strong>, and a <strong>prediction</strong> written before you run it. Rank by <em>likelihood × ease of testing</em>, not likelihood alone. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></li>
+  <li><strong>Run the cheapest discriminating test.</strong> Confirm → root cause. Falsify → log it, re-rank with the new constraint; a falsified test told you where the bug <em>is not</em>. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></li>
+  <li><strong>Fix the root cause — minimum change.</strong> Resist refactoring the neighborhood. Write the regression test that would have failed before the fix, in the same commit. If it is genuinely untestable (a real race, a UI glitch), say so and write a manual check instead of a test that asserts nothing. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></li>
+</ol>
+<div class="callout"><strong>"It worked yesterday" shortcut — git bisect.</strong> When a bug is new, stop rereading the diff. Find a good commit and a bad commit, then binary-search between them with one deterministic test command; git walks you to the exact introducing commit in a handful of steps. Your first hypothesis becomes "something in this one commit," which is very cheap to test. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></div>
+<div class="drill">When you are four rounds in and every test falsified, that is not "try harder" — it is a sign your mental model is wrong. Have a fresh reviewer explain the suspect code cold, without your hypotheses. Solo, ask the AI to explain what the code does with no bug context, then compare. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></div>
+
+<h2>5 · Decision Rubric</h2>
+<p>Seniors ask <em>"how does this system behave?"</em> before <em>"does this component work?"</em> — boundaries, feedback loops, emergence, and resilience are where the failures hide. <a href="https://blog.paulserban.eu/post/systems-thinking-in-software-engineering-the-mental-model-that-separates-senior-engineers-from-juniors/">[Serban]</a> Run a decision through these questions:</p>
+<table>
+  <tr><th>Question</th><th>If yes…</th><th>If no…</th></tr>
+  <tr><td><strong>Is it mandatory?</strong></td><td>It is not a choice — just build it to spec.</td><td>It is a tradeoff; weigh the rest.</td></tr>
+  <tr><td><strong>Reversible or irreversible?</strong></td><td>Reversible → <strong>decide fast</strong>, cheap to undo, verify and move.</td><td>Irreversible (schema, tenant model, public API) → <strong>decide deliberately</strong>. Draw the system first. <a href="https://blog.paulserban.eu/post/systems-thinking-in-software-engineering-the-mental-model-that-separates-senior-engineers-from-juniors/">[Serban]</a></td></tr>
+  <tr><td><strong>What evidence decides it?</strong></td><td>If a cheap test/measurement exists, run it and let evidence decide.</td><td>If not, you are guessing — say so and pick the option with the smaller blast radius.</td></tr>
+  <tr><td><strong>Cost-of-change &amp; decomposability</strong></td><td>Small, independently shippable change → build now in a bounded sprint.</td><td>Large or entangled → split it; if the pieces share one bottleneck, that coupling is the real decision. <a href="https://blog.paulserban.eu/post/systems-thinking-in-software-engineering-the-mental-model-that-separates-senior-engineers-from-juniors/">[Serban]</a></td></tr>
+</table>
+<div class="habit">Failure-mode analysis is the reflex: for any design, cycle "what happens when X fails?" through every dependency — FalkorDB down, stale read, malformed data, rate limit hit, tenant graph missing. It forces you to see the system in an uncertain environment, not an idealized test. <a href="https://blog.paulserban.eu/post/systems-thinking-in-software-engineering-the-mental-model-that-separates-senior-engineers-from-juniors/">[Serban]</a></div>
+
+<h2>6 · Autonomy Tiers</h2>
+<p>Treating a novel architecture decision and a mechanical rename the same way is inefficient in both directions. Decide the tier before the task and write it at the top of the spec. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></p>
+<table>
+  <tr><th>Tier</th><th>Mode</th><th>Use when</th></tr>
+  <tr><td><strong>Tier 1 — Interactive</strong></td><td>You watch every step; the agent proposes, you approve.</td><td>Novel decisions, architecture, anything where the wrong choice is expensive. New to a concept (graph modelling).</td></tr>
+  <tr><td><strong>Tier 2 — Bounded sprint</strong></td><td>The agent works independently for 30–60 min and reports at a checkpoint.</td><td>Implementing a spec you already wrote: wiring the cockpit, writing Cypher, tests, a refactor.</td></tr>
+  <tr><td><strong>Tier 3 — Unattended batch</strong></td><td>The agent runs unattended; you review results.</td><td>Purely mechanical: formatting, docs, dependency updates, generated boilerplate.</td></tr>
+</table>
+<p>Structure the session around <strong>three roles</strong>, not one. One agent for everything accumulates half-remembered context, blurs its role, and starts touching layers it should not. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></p>
+<table>
+  <tr><th>Role</th><th>Owns</th><th>Hard rule</th></tr>
+  <tr><td><strong>Builder</strong></td><td>The app layer — follows the spec, produces the feature.</td><td>Stops at the first blocker and writes an exact issue report; never improvises around it.</td></tr>
+  <tr><td><strong>Fixer</strong></td><td>The core/lower layer the builder depends on.</td><td>Reads blocker reports, fixes root cause, never edits the app being built.</td></tr>
+  <tr><td><strong>Reviewer</strong></td><td>Independent verification.</td><td>Explains code cold and checks the exit criterion; not the author's context.</td></tr>
+</table>
+<div class="habit">Separating builder from fixer is not just tidiness: the builder meets bugs the way a real user does and cannot rationalise them away, which produces precise, actionable reports. <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">[10xdev.blog]</a></div>
+
+<h2>7 · Weak → Senior Prompt Library</h2>
+<p>Eight swaps. The right column is not longer for its own sake — it carries the spec card, the context bucket, the boundaries, and the verify line. Use them as templates, not scripts.</p>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"Add agent memory to the app."</p></div>
+  <div class="senior"><p>"Add episodic memory: persist each conversation turn as a <code>:Turn</code> node linked to its <code>:User</code> via <code>MERGE</code> (camelCase keys). Exit criterion: two writes of the same <code>turnId</code> leave <code>count(t)==1</code>. Out of scope: semantic extraction, UI. Verify: paste the <code>MATCH … RETURN count(t)</code> output. Don't reopen the three-tier model."</p></div>
+</div>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"Fix this bug."</p></div>
+  <div class="senior"><p>"Expected: <code>MERGE</code> dedupes turns. Observed: duplicate <code>:Turn</code> nodes after retry (stack/log line below). Repro: run the writer twice with the same <code>turnId</code>. Do <em>not</em> propose a fix until the repro is confirmed. Then give 3 ranked hypotheses with claim/test/prediction and run the cheapest test first."</p></div>
+</div>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"It doesn't work."</p></div>
+  <div class="senior"><p>"The recall query returns <code>null</code> for a user with saved turns. Expected: last 5 turns ordered by <code>at DESC</code>. Observed: empty result (exact query output pasted). Repro: seed one turn, run the read. Here is the ALWAYS context (schema + locked keys) and the ON-DEMAND query file — tell me what is missing before guessing."</p></div>
+</div>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"Make it better."</p></div>
+  <div class="senior"><p>"Improve recall latency only. Exit criterion: read of last 20 turns p95 under 50ms on the local graph. Boundary: do not change the write path or the schema. Locked: <code>MERGE</code>-per-entity stays. Verify: before/after timing on the same seed data. If you can't measure it, say so instead of optimising blind."</p></div>
+</div>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"Explain this."</p></div>
+  <div class="senior"><p>"Explain what this Cypher does line by line, then the graph shape it touches. Audience: I'm new to Cypher. Constraint: no jargon I haven't met; define MERGE and variable-length paths if you use them. End with one sentence on what would break if the edge direction were reversed."</p></div>
+</div>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"Review this."</p></div>
+  <div class="senior"><p>"Review this handler against our locked decisions (idempotent writes, camelCase keys, per-tenant graph). Report only: correctness bugs, boundary violations, and missing failure handling when FalkorDB is down. For each, cite the line and the rule it breaks. No style nits. State confidence per finding."</p></div>
+</div>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"Research X."</p></div>
+  <div class="senior"><p>"Research whether a standard shared multi-agent handoff pattern exists over FalkorDB. Consult ≥3 sources, prefer primary docs over summaries; give a URL per claim. Explicitly write 'no trusted source found' rather than guessing. End with: does this change our handoff-ledger design? Cite each source inline."</p></div>
+</div>
+
+<div class="prompt-diff">
+  <div class="weak"><p>"Refactor this."</p></div>
+  <div class="senior"><p>"Refactor the write path into one reusable function. Exit criterion: existing tests still pass, and the function is called from both the cockpit and the batch seeder. Boundary: no behaviour change, no schema change. Locked: idempotent MERGE semantics. Verify: run the test suite and paste the summary. Show the diff before applying."</p></div>
+</div>
+
+<div class="drill">Pick the three prompts you sent most this week. Rewrite each into the senior column with a spec card, a boundary, and a verify line. Keep them in a <code>prompts.md</code> in the repo as reusable assets.</div>
+
+<h2>8 · Question Templates</h2>
+
+<h3>Bug report (paste this when something fails)</h3>
+<pre><code>Expected:   the precise behaviour I wanted.
+Observed:   the exact error / wrong value / log line (not "it crashes").
+Repro:      the minimal sequence that triggers it, reliably.
+Tried:      what I already changed and what happened.
+Ask:        do not fix until the repro is confirmed; then 3 ranked
+            hypotheses (claim / test / prediction), cheapest test first.</code></pre>
+<p>If you cannot trigger it on demand, finding a reliable repro <em>is</em> the task — say that instead of asking for a fix. <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">[maxtdesign]</a></p>
+
+<h3>Explain template</h3>
+<pre><code>Explain [thing] to a beginner with no [domain] background.
+Constraints: [depth, length, no jargon or define it].
+Give: a concrete example from THIS repo.
+End with: the single sentence I should remember, and one thing
+that would break if the key assumption were reversed.</code></pre>
+
+<h3>Review template</h3>
+<pre><code>Review [artifact] against [the locked decisions / the spec card].
+Report only: correctness bugs · boundary violations · missing
+failure handling. Cite the line and the rule broken for each.
+Skip style nits. Give a confidence level per finding.
+Confirm explicitly if you find nothing.</code></pre>
+
+<h2>9 · Senior Questions Checklist</h2>
+<p>The questions a senior asks <em>before</em> starting. If you cannot answer them, you are not ready to spend the agent's cycle. <a href="https://blog.paulserban.eu/post/systems-thinking-in-software-engineering-the-mental-model-that-separates-senior-engineers-from-juniors/">[Serban]</a></p>
+<ul class="selfcheck">
+  <li>☐ <strong>What is the exit criterion?</strong> A specific, verifiable check — never "it works."</li>
+  <li>☐ <strong>What breaks if this fails?</strong> Name the dependencies and their failure modes (FalkorDB down, stale read, bad data, rate limit).</li>
+  <li>☐ <strong>Is it reversible?</strong> Reversible → move fast; irreversible → draw the system, decide deliberately.</li>
+  <li>☐ <strong>Where are the boundaries?</strong> What is in scope, what is out, and which interfaces carry the uncertainty?</li>
+  <li>☐ <strong>What is the context budget?</strong> Which files are ALWAYS, which ON DEMAND, which NEVER.</li>
+  <li>☐ <strong>Which autonomy tier?</strong> Interactive, bounded sprint, or unattended batch — decided up front.</li>
+  <li>☐ <strong>What is the bottleneck?</strong> The tightest resource sets the ceiling; you can move it, not remove it.</li>
+  <li>☐ <strong>How will I verify?</strong> The exact command/assertion, run immediately after each action.</li>
+  <li>☐ <strong>What feedback loops does this create?</strong> Will a retry, cache, or slowdown amplify or self-correct?</li>
+</ul>
+
+<div class="win">Six gates, a 5-line spec card, a 3-bucket context budget, a hypothesis-first debug loop, and a prompt library — the whole course on one printable page. If you can answer the §9 checklist, you can direct the agent instead of following it.</div>
+
+<div class="source">
+  <h3>Sources</h3>
+  <p>
+    <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">10xdev.blog · 7+ Things Every Developer Gets Wrong About AI Agents in 2026</a> — context &gt; prompt engineering (20–45% faster cycles, 82% of teams say prompting alone is not enough); the ALWAYS/ON-DEMAND/NEVER context budget; Spec-Driven Development and the 5-point spec card (3–10× first-pass success); per-action verification; the Builder/Fixer role split; the three autonomy tiers; git as the agent's long-term memory. Cited in §1–3, §6.<br>
+    <a href="https://maxtdesign.com/learn/developer-tools/systematic-debugging-method">MaxtDesign · A Debugging Method That Beats Vibes</a> — reproduce before theorising (expected/observed/repro); three ranked hypotheses with claim/test/prediction; rank by likelihood × ease of test; the cheapest discriminating test; fix root cause + regression test in the same commit; git bisect for "it worked yesterday"; the cold-read reviewer. Cited in §4, §8.<br>
+    <a href="https://blog.paulserban.eu/post/systems-thinking-in-software-engineering-the-mental-model-that-separates-senior-engineers-from-juniors/">Paul Serban · Systems Thinking in Software Engineering</a> — component thinking vs systems thinking; boundaries &amp; interfaces; feedback loops and emergence; resilience; failure-mode analysis; capacity/bottleneck thinking; draw the system before coding; the senior questions in §9. Cited in §5, §9.
+  </p>
+  <p>Terms (<strong>agent memory</strong>, <strong>episodic / semantic / procedural memory</strong>, <strong>handoff</strong>, <strong>MERGE</strong>, <strong>multi-graph / multi-tenant topology</strong>) are used exactly as defined in this workspace's <a href="../GLOSSARY.md">GLOSSARY.md</a>.</p>
+</div>
+
+<footer>
+  <p>The Engineer's Prompt Playbook · <a href="CURRICULUM.html">back to the curriculum</a> · reference, not a lesson — no win to log. Stuck on a step? Ask your teacher in opencode.</p>
+</footer>
+
+<script>
+(function () {
+  document.querySelectorAll('.specbuilder').forEach(function (box) {
+    var pre = box.querySelector('pre');
+    if (!pre) return;
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = 'Copy spec card';
+    btn.addEventListener('click', function () {
+      var text = pre.innerText;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function () {
+          btn.textContent = 'Copied';
+          setTimeout(function () { btn.textContent = 'Copy spec card'; }, 1200);
+        });
+      }
+    });
+    box.appendChild(btn);
+  });
+})();
+</script>
+</body>
+</html>

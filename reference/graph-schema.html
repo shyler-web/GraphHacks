@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Graph Data Model — GraphSync Track 02</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Reference</p>
+<h1>Graph Data Model</h1>
+<p class="lede">The proposed schema for GraphSync: one connected graph that composes <strong>episodic</strong>, <strong>semantic</strong>, and <strong>procedural memory</strong> into a <strong>three-tier memory model</strong>, plus the coordination layer that persists multi-agent state. Paste or adapt this into your README (rule 10).</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="cypher-cheatsheet.html">Cypher cheat sheet</a>
+  <a href="concurrency.html">Concurrency &amp; isolation</a>
+  <a href="../GLOSSARY.md">Glossary</a>
+</nav>
+
+<div class="callout">
+  <strong>Grounding.</strong> The three-tier split is FalkorDB's canonical agent-memory taxonomy: <em>episodic memory</em> is "records of past interactions, stored as timestamped event nodes linked to entity nodes"; <em>semantic memory</em> is "factual knowledge about the domain, the knowledge graph itself"; <em>procedural memory</em> is "stored tool-use patterns and successful query strategies, represented as workflow subgraphs the agent can re-execute." This model adopts that taxonomy and extends it with an explicit coordination layer (Agent, Handoff) for Track 02's shared-state and handoff requirement.
+  <br><br>
+  Source: <a href="https://www.falkordb.com/blog/graph-database-ai-agents">Graph Database AI Agents — GraphRAG &amp; Memory Guide, FalkorDB</a>. See also the <a href="../RESOURCES.md">resource shelf</a>.
+</div>
+
+<h2>1. Node labels</h2>
+<p>Every label below is a <strong>node</strong> with a stable <code>id</code>. Timestamps are Unix epoch integers (FalkorDB convention in the source guide). Colors are informational only.</p>
+
+<table>
+  <tr>
+    <th>Tier</th><th>Label</th><th>Key properties</th><th>Meaning</th>
+  </tr>
+  <tr>
+    <td>Tenant</td><td><code>:Tenant</code></td>
+    <td><code>id</code>, <code>name</code>, <code>graph_key</code></td>
+    <td>An isolation boundary. One Tenant ↔ one FalkorDB graph key. Root of the <strong>multi-graph / multi-tenant topology</strong>.</td>
+  </tr>
+  <tr>
+    <td rowspan="3">Episodic</td><td><code>:User</code></td>
+    <td><code>id</code>, <code>display_name</code></td>
+    <td>The actor. Linked to past interactions so the agent can recall "what happened last time."</td>
+  </tr>
+  <tr>
+    <td><code>:Session</code></td>
+    <td><code>id</code>, <code>started_at</code>, <code>ended_at</code>, <code>title</code></td>
+    <td>A contiguous conversation. Groups turns and gives persistent conversation history a home.</td>
+  </tr>
+  <tr>
+    <td><code>:Turn</code></td>
+    <td><code>id</code>, <code>timestamp</code>, <code>role</code>, <code>text</code>, <code>response_quality</code></td>
+    <td>A single message/event: <code>role</code> ∈ {user, agent, tool}. The atomic episodic record.</td>
+  </tr>
+  <tr>
+    <td rowspan="3">Semantic</td><td><code>:Entity</code></td>
+    <td><code>id</code>, <code>name</code>, <code>type</code>, <code>embedding</code></td>
+    <td>An extracted domain object (service, user, plan, dependency). Durable, independent of any one interaction.</td>
+  </tr>
+  <tr>
+    <td><code>:Fact</code></td>
+    <td><code>id</code>, <code>statement</code>, <code>confidence</code>, <code>source_turn</code></td>
+    <td>A durable assertion about the domain, linked to the entity it concerns and the turn it was derived from.</td>
+  </tr>
+  <tr>
+    <td><code>:Topic</code></td>
+    <td><code>name</code></td>
+    <td>A subject label that ties episodic turns and semantic entities together (e.g. <code>auth-service-dependencies</code>).</td>
+  </tr>
+  <tr>
+    <td rowspan="3">Procedural</td><td><code>:Tool</code></td>
+    <td><code>id</code>, <code>name</code>, <code>signature</code></td>
+    <td>A callable capability (a Cypher query template, an API, a graph algorithm).</td>
+  </tr>
+  <tr>
+    <td><code>:Workflow</code></td>
+    <td><code>id</code>, <code>name</code>, <code>trigger_domain</code>, <code>learned_from</code></td>
+    <td>A reusable, re-executable sequence of steps — the stored pattern of a successful strategy.</td>
+  </tr>
+  <tr>
+    <td><code>:Step</code></td>
+    <td><code>id</code>, <code>order</code>, <code>action</code>, <code>expected_result</code></td>
+    <td>One action inside a workflow. Steps are chained into a subgraph the agent can replay.</td>
+  </tr>
+  <tr>
+    <td rowspan="2">Coordination</td><td><code>:Agent</code></td>
+    <td><code>id</code>, <code>name</code>, <code>role</code>, <code>persona_level</code></td>
+    <td>One of the 4-agent squad (VibeArchitect L0–L1, FullStackBuilder L2–L3, SeniorAuditor L4, PrincipalResearcher L5).</td>
+  </tr>
+  <tr>
+    <td><code>:Handoff</code></td>
+    <td><code>id</code>, <code>created_at</code>, <code>reason</code>, <code>status</code></td>
+    <td>An event node recording transfer of state and responsibility. <code>status</code> ∈ {PENDING, COMPLETED, ALERT_RAISED, PLAYBOOK_ENFORCED}.</td>
+  </tr>
+</table>
+
+<div class="win">This table is the "graph data model" your README must contain. Keep the four tiers visible and name at least one property per label.</div>
+
+<h2>2. Relationship types</h2>
+<p>Every <strong>edge (relationship)</strong> is typed, directed, and may carry properties. Directions below are the canonical traversal direction.</p>
+
+<table>
+  <tr><th>Type</th><th>Direction</th><th>Properties</th><th>Meaning</th></tr>
+  <tr><td><code>:PARTICIPATED</code></td><td><code>(:User)-[:PARTICIPATED]->(:Turn)</code></td><td>—</td><td>A user took part in a turn. Opens the episodic recall path.</td></tr>
+  <tr><td><code>:IN_SESSION</code></td><td><code>(:Turn)-[:IN_SESSION]->(:Session)</code></td><td>—</td><td>Groups turns into persistent conversation history.</td></tr>
+  <tr><td><code>:ABOUT</code></td><td><code>(:Turn)-[:ABOUT]->(:Topic)</code></td><td>—</td><td>The turn is on-topic. The join between episodic and semantic tiers.</td></tr>
+  <tr><td><code>:MENTIONS</code></td><td><code>(:Turn)-[:MENTIONS]->(:Entity)</code></td><td>—</td><td>A turn references a domain entity, feeding factual extraction.</td></tr>
+  <tr><td><code>:HAS_FACT</code></td><td><code>(:Entity)-[:HAS_FACT]->(:Fact)</code></td><td>—</td><td>Binds a durable fact to the entity it describes.</td></tr>
+  <tr><td><code>:DERIVED_FROM</code></td><td><code>(:Fact)-[:DERIVED_FROM]->(:Turn)</code></td><td>—</td><td>Provenance: the episodic turn this fact was extracted from (explainability).</td></tr>
+  <tr><td><code>:RELATES_TO</code></td><td><code>(:Entity)-[:RELATES_TO {type}]->(:Entity)</code></td><td><code>type</code>, <code>confidence</code></td><td>A typed semantic edge between two entities (depends_on, owns, etc.). This is the "each extracted relationship becomes a typed edge" rule.</td></tr>
+  <tr><td><code>:SAME_TOPIC</code></td><td><code>(:Topic)-[:SAME_TOPIC]->(:Topic)</code></td><td>—</td><td>Links adjacent topics for cross-session recall.</td></tr>
+  <tr><td><code>:USES</code></td><td><code>(:Workflow)-[:USES]->(:Tool)</code></td><td>—</td><td>A reusable workflow invokes a callable tool.</td></tr>
+  <tr><td><code>:NEXT_STEP</code></td><td><code>(:Step)-[:NEXT_STEP {order}]->(:Step)</code></td><td><code>order</code></td><td>Chains steps into the replayable workflow subgraph.</td></tr>
+  <tr><td><code>:START</code></td><td><code>(:Workflow)-[:START]->(:Step)</code></td><td>—</td><td>The entry step of a workflow.</td></tr>
+  <tr><td><code>:LEARNED_FROM</code></td><td><code>(:Workflow)-[:LEARNED_FROM]->(:Handoff)</code></td><td>—</td><td>Procedural memory is written from a completed fix or audit — the "learn once" edge.</td></tr>
+  <tr><td><code>:EXECUTED</code></td><td><code>(:Agent)-[:EXECUTED]->(:Workflow)</code></td><td><code>at</code></td><td>Evidence that an agent ran a workflow (for confidence weighting).</td></tr>
+  <tr><td><code>:HANDED_TO</code></td><td><code>(:Agent)-[:HANDED_TO {at}]->(:Agent)</code></td><td><code>at</code></td><td>Direct edge between agents; the coordination skeleton.</td></tr>
+  <tr><td><code>:FROM_AGENT</code></td><td><code>(:Handoff)-[:FROM_AGENT]->(:Agent)</code></td><td>—</td><td>Sender of a recorded handoff.</td></tr>
+  <tr><td><code>:TO_AGENT</code></td><td><code>(:Handoff)-[:TO_AGENT]->(:Agent)</code></td><td>—</td><td>Receiver of a recorded handoff.</td></tr>
+  <tr><td><code>:TARGETS</code></td><td><code>(:Handoff)-[:TARGETS]->(:Entity)</code></td><td>—</td><td>The semantic node the handoff concerns (the shared-state pointer).</td></tr>
+  <tr><td><code>:PRODUCED</code></td><td><code>(:Agent)-[:PRODUCED]->(:Turn)</code></td><td>—</td><td>The agent authored this turn.</td></tr>
+  <tr><td><code>:MODIFIED</code></td><td><code>(:Turn)-[:MODIFIED]->(:Entity)</code></td><td><code>op</code></td><td>Records a write: which entity a turn created or changed and how.</td></tr>
+</table>
+
+<h2>3. The model in one picture</h2>
+<pre><code>                          :Tenant  (≈ one FalkorDB graph key)
+                             │
+   ┌───────────── EPISODIC ───┼─── SEMANTIC ──────────────┐
+   │                         │                            │
+ (:User)                     │                        (:Entity)─────(:Fact)
+    │ PARTICIPATED            │                            ▲   HAS_FACT   │
+    ▼                         │                            │             │ DERIVED_FROM
+ (:Turn)──IN_SESSION──▶(:Session)      MENTIONS        (:Turn)◀───────────┘
+    │                         │                            │
+    │ ABOUT                   │                            │
+    ▼                         │                            │
+ (:Topic)◀──────────────────┘               (:Entity)─RELATES_TO─▶(:Entity)
+
+   ┌───────────── PROCEDURAL ─────────────┐   ┌──── COORDINATION ────┐
+   │ (:Workflow)─[:START]─▶(:Step)         │   │ (:Agent)─HANDED_TO─▶ │
+   │      │                   │            │   │   (:Agent)           │
+   │   :USES              :NEXT_STEP        │   │     ▲     │          │
+   │      ▼                   ▼            │   │  TO_AGENT  │ FROM_AGENT
+   │   (:Tool)            (:Step)          │   │     │     ▼          │
+   │      ▲                                │   │   (:Handoff)─TARGETS─┼──▶(:Entity)
+   │  :LEARNED_FROM                        │   │        ▲             │
+   └──────┼────────────────────────────────┘   └────────┼─────────────┘
+          └──────────── invoked after ──────────────────┘
+                        (:Handoff) completes</code></pre>
+
+<h2>4. Example Cypher statements</h2>
+<p>All writes use <strong>MERGE</strong> for idempotent memory writes. Indexes on the properties used in <code>MERGE</code> keep writes off full-graph scans (source guide, "Index strategy").</p>
+
+<h3>4.1 Create indexes and the tenant/user roots</h3>
+<pre><code>CREATE INDEX FOR (u:User) ON (u.id);
+CREATE INDEX FOR (t:Turn) ON (t.id);
+CREATE INDEX FOR (e:Entity) ON (e.id);
+
+MERGE (t:Tenant {id: $tenant_id})
+  ON CREATE SET t.name = $tenant_name, t.graph_key = $graph_key
+MERGE (u:User {id: $user_id})
+  ON CREATE SET u.display_name = $display_name;
+</code></pre>
+<p><em>Note:</em> FalkorDB uses one graph per tenant, so <code>:Tenant</code> is usually implicit in the key. Keep it if you also maintain a registry graph.</p>
+
+<h3>4.2 Write episodic memory (a turn) and link it to a user and topic</h3>
+<pre><code>MERGE (u:User {id: $user_id})
+MERGE (s:Session {id: $session_id})
+MERGE (t:Topic {name: $topic})
+CREATE (turn:Turn {
+  id: $turn_id, timestamp: $ts, role: $role,
+  text: $text, response_quality: $quality
+})
+CREATE (u)-[:PARTICIPATED]->(turn)
+CREATE (turn)-[:IN_SESSION]->(s)
+CREATE (turn)-[:ABOUT]->(t);
+</code></pre>
+<p>This mirrors the source guide's <code>(:User)-[:PARTICIPATED]->(:Episode)-[:ABOUT]->(:Topic)</code> pattern, with <code>:Turn</code> as the timestamped event node.</p>
+
+<h3>4.3 Write semantic memory (entity + fact + typed relation)</h3>
+<pre><code>MERGE (a:Entity {id: $subj_id})  ON CREATE SET a.name = $subj_name, a.type = $subj_type
+MERGE (b:Entity {id: $obj_id})   ON CREATE SET b.name = $obj_name,  b.type = $obj_type
+MERGE (f:Fact {id: $fact_id})
+  ON CREATE SET f.statement = $statement, f.confidence = $confidence
+MERGE (a)-[:HAS_FACT]->(f)
+MERGE (f)-[:DERIVED_FROM]->(:Turn {id: $source_turn})
+MERGE (a)-[:RELATES_TO {type: $rel_type}]->(b);
+</code></pre>
+
+<h3>4.4 Record a procedural workflow and an agent handoff</h3>
+<pre><code>MERGE (w:Workflow {id: $wf_id})
+  ON CREATE SET w.name = $wf_name, w.trigger_domain = $domain,
+                w.learned_from = $handoff_id
+MERGE (s1:Step {id: $s1_id})  SET s1.order = 1, s1.action = $a1
+MERGE (s2:Step {id: $s2_id})  SET s2.order = 2, s2.action = $a2
+MERGE (w)-[:START]->(s1)
+MERGE (s1)-[:NEXT_STEP {order: 1}]->(s2)
+MERGE (w)-[:USES]->(:Tool {id: $tool_id});
+
+MERGE (from:Agent {id: $from_id})
+MERGE (to:Agent   {id: $to_id})
+CREATE (h:Handoff {
+  id: $handoff_id, created_at: $ts, reason: $reason, status: 'COMPLETED'
+})
+CREATE (h)-[:FROM_AGENT]->(from)
+CREATE (h)-[:TO_AGENT]->(to)
+CREATE (from)-[:HANDED_TO {at: $ts}]->(to)
+MERGE (h)-[:TARGETS]->(:Entity {id: $target_entity_id});
+</code></pre>
+
+<h3>4.5 Recall: traverse episodic → semantic for an explainable answer</h3>
+<pre><code>MATCH (u:User {id: $user_id})-[:PARTICIPATED]->(turn:Turn)-[:ABOUT]->(topic:Topic)
+MATCH (turn)-[:MENTIONS]->(e:Entity)-[:RELATES_TO*0..2]->(related:Entity)
+RETURN turn.text, turn.timestamp, topic.name, e.name, related.name
+ORDER BY turn.timestamp DESC
+LIMIT 20;
+</code></pre>
+
+<h2>5. Per-tenant isolation</h2>
+<p>FalkorDB holds thousands of isolated graphs in a single instance, so each tenant gets its own memory graph without a separate deployment — the <strong>multi-graph / multi-tenant topology</strong>. Select the graph by key; never mix tenant data in one graph.</p>
+<pre><code>graph = db.select_graph(f"tenant:{tenant_id}")   # one graph per tenant
+graph.query("MERGE (u:User {id: $id})", {"id": user_id})</code></pre>
+<p>Because every write is scoped to a graph key, an agent can only reach the current tenant's nodes; cross-tenant reads require an explicit second <code>select_graph</code>. This is what makes "separate memory per user or tenant" a structural property rather than a query filter. For concurrent writers, batching, and lock patterns across these graphs, see <a href="concurrency.html">Concurrency &amp; isolation notes</a>.</p>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>FalkorDB, <a href="https://www.falkordb.com/blog/graph-database-ai-agents">Graph Database AI Agents: GraphRAG &amp; Memory Guide</a> — definitions of episodic/semantic/procedural memory, the <code>User–PARTICIPATED–Episode–ABOUT–Topic</code> write pattern, MERGE-based memory writes, and the index/latency guidance.</p>
+  <p>Companion: <a href="../reference/CURRICULUM.html">Track 02 curriculum</a> · <a href="cypher-cheatsheet.html">Cypher cheat sheet</a> · <a href="../GLOSSARY.md">Glossary</a>.</p>
+</div>
+
+<footer>
+  <p>GraphSync · Track 02 — Agent Memory and Coordination. Every claim cites a source; model terms match <a href="../GLOSSARY.md">GLOSSARY.md</a>. Stuck? Ask your teacher in opencode.</p>
+</footer>
+</body>
+</html>

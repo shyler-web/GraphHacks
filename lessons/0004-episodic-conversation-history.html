@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0004 — Episodic Memory: Conversation History</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0004 · Track 02 — Agent Memory and Coordination</p>
+<h1>Episodic Memory: Conversation History</h1>
+<p class="lede">Persist each interaction as timestamped <strong>Node</strong>s in <strong>FalkorDB</strong> so your agent recalls the right past turns across sessions instead of replaying everything.</p>
+
+<p class="win">By the end you can <em>write one conversation turn with MERGE and recall a user's last N turns about a topic</em>, evidenced by the recall query returning those turns newest-first.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="0003-three-tier-memory-model.html">Prev</a>
+  <a href="0005-semantic-memory-facts.html">Next →</a>
+  <a href="../reference/cypher-cheatsheet.html">Cypher cheat sheet</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>Two Track 02 key-focus points are <strong>episodic memory</strong> and <strong>persistent conversation history</strong>. Your cockpit's backend is simulated today, so it "forgets" between reloads. This lesson replaces the simulation with a real graph write — the first piece of <strong>agent memory</strong> your demo can point at.</p>
+
+<h2>The idea</h2>
+<p><strong>Episodic memory</strong> is a record of specific past interactions, stored as timestamped event Nodes linked to the entities involved. FalkorDB's canonical example writes exactly that: a <code>MERGE</code>d <code>User</code> and <code>Topic</code>, plus a created <code>Episode</code> carrying a timestamp, connected by <strong>Edge (relationship)</strong>s <code>PARTICIPATED</code> and <code>ABOUT</code>.<sup><a href="#s1">[1]</a></sup> We extend the same shape with an explicit <code>Session</code> and <code>Turn</code> so history is grouped by conversation, not one flat pile.</p>
+
+<p>Model (all Cypher, all in one graph):</p>
+<pre><code>(:User)-[:PARTICIPATED]-&gt;(:Session)-[:HAS_TURN]-&gt;(:Turn)-[:ABOUT]-&gt;(:Topic)
+                                           (:Turn)-[:MENTIONS]-&gt;(:Entity)</code></pre>
+
+<p>Why this beats replaying a raw transcript: replaying the whole chat log into the prompt is unbounded — it grows every turn, wastes context, and still can't answer "what did this user ask about auth three sessions ago?" A graph query is bounded, targeted, and traversable. You ask for one user, one topic, the newest N turns — and you can walk from a recalled turn to the entities it touched. That relational recall is the whole reason a graph layer exists instead of a vector store.<sup><a href="#s2">[2]</a></sup></p>
+
+<p>Write one turn idempotently — <code>MERGE</code> on identity, <code>ON CREATE SET</code> for the data, so re-running never duplicates:</p>
+<pre><code>MERGE (u:User {id:'u-1234'})
+MERGE (s:Session {id:'s-01'})
+MERGE (t:Turn {id:'t-01'})
+ON CREATE SET t.timestamp=1715300010, t.role='user',
+              t.text='Which services break if auth goes down?'
+MERGE (u)-[:PARTICIPATED]-&gt;(s)
+MERGE (s)-[:HAS_TURN]-&gt;(t)
+MERGE (topic:Topic {name:'auth-service-dependencies'})
+MERGE (t)-[:ABOUT]-&gt;(topic)</code></pre>
+
+<p>Recall the last N turns for one user about one topic. This is the query your "memory" panel and your LLM context-builder share:</p>
+<pre><code>MATCH (u:User {id:'u-1234'})-[:PARTICIPATED]-&gt;(s:Session)
+      -[:HAS_TURN]-&gt;(t:Turn)-[:ABOUT]-&gt;(topic:Topic {name:'auth-service-dependencies'})
+RETURN t.text AS text, t.timestamp AS ts
+ORDER BY ts DESC
+LIMIT 3</code></pre>
+
+<div class="quiz" data-answer="1" data-explain="MATCH finds the pattern and MERGE writes it; the chronological capping is ORDER BY t.timestamp DESC LIMIT 3, which returns the most recent turns first.">
+  <p class="q">You want the last 3 turns a given user had about one topic. Which part of the recall Cypher caps the result to the <em>newest</em> three?</p>
+  <button type="button">The leading MATCH pattern</button>
+  <button type="button">ORDER BY t.timestamp DESC LIMIT 3</button>
+  <button type="button">The :ABOUT relationship type</button>
+  <p class="fb"></p>
+</div>
+
+<h2>Do it</h2>
+<ol class="steps">
+  <li>Start FalkorDB (Lesson 0001): <code>docker run -d --rm --name falkordb -p 6379:6379 falkordb/falkordb:latest</code></li>
+  <li>Index the lookup key first — this is what keeps MERGE off a full-graph scan:<br>
+  <code>docker exec falkordb redis-cli GRAPH.QUERY agent_memory "CREATE INDEX FOR (u:User) ON (u.id)"</code><br>
+  Expected: <code>Indices created: 1</code></li>
+  <li>Write turn <code>t-01</code> with the write query above (paste it as the last argument, in one pair of quotes). Expected stats: <code>Nodes created: 4</code>, <code>Relationships created: 3</code>, <code>Properties set: 8</code>. Re-run it — stats become <code>Nodes created: 0</code> (MERGE is idempotent).</li>
+  <li>Write a second turn <code>t-02</code> on the same topic with a later <code>timestamp</code> (e.g. <code>1715300200</code>, <code>role='assistant'</code>).</li>
+  <li>Run the recall query. Expected: a <code>text, ts</code> header, then <code>t-02</code>'s row above <code>t-01</code>'s, newest first. Change <code>LIMIT 3</code> to <code>LIMIT 1</code> and confirm only the newest turn returns.</li>
+</ol>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p id="s1">FalkorDB's episodic-memory write pattern (MERGE User/Topic + CREATE Episode with timestamp). <a href="https://www.falkordb.com/blog/graph-database-ai-agents">GraphRAG, AI Agents, and Memory — FalkorDB</a></p>
+  <p id="s2">Conversation-history persistence and why stateless LLMs need a graph memory layer. <a href="https://dev.to/falkordb/langchain-falkordb-building-ai-agents-with-memory-191">LangChain + FalkorDB: Building AI Agents with Memory — DEV/FalkorDB</a></p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track 02 Curriculum</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Agent Memory and Coordination</p>
+<h1>Your path to a winning demo</h1>
+<p class="lede">Short lessons, each one tangible win. <strong>Milestone E</strong> teaches you to think like a senior engineer (which is what actually makes prompting work); <strong>Milestones A–D</strong> build the deployed Track 02 submission. Read one, do the win, move on.</p>
+
+<p class="win">Complete the series and you will have a FalkorDB-backed multi-agent memory system running, explained, and submitted — and the engineering judgment to direct and debug it yourself.</p>
+
+<h2>Milestone E — Work like a senior engineer <span style="font-family:var(--sans);font-size:.7rem;color:var(--accent)">START HERE</span></h2>
+<p style="font-family:var(--sans);font-size:.9rem;color:var(--ink-soft)">The thesis: <em>you cannot prompt better than you can think.</em> These install the habits that make prompting work — do them first; they govern every lesson below. Keep the <a href="prompt-playbook.html">playbook</a> open while you build.</p>
+<table>
+  <tr><th>#</th><th>Lesson</th><th>Win</th></tr>
+  <tr><td><a href="../lessons/0101-the-engineers-prompt.html">0101</a></td><td>The Engineer's Prompt</td><td>Name the seven habits and self-assess</td></tr>
+  <tr><td><a href="../lessons/0102-think-in-systems.html">0102</a></td><td>Think in Systems, Not Steps</td><td>Draw your app's data flow + 3 failure modes</td></tr>
+  <tr><td><a href="../lessons/0103-define-done-spec-cards.html">0103</a></td><td>Define "Done": Spec Cards</td><td>Write a spec card for your next task</td></tr>
+  <tr><td><a href="../lessons/0104-engineer-the-context.html">0104</a></td><td>Engineer the Context</td><td>Set your always/on-demand/never context budget</td></tr>
+  <tr><td><a href="../lessons/0105-decompose-and-contracts.html">0105</a></td><td>Decompose &amp; Design Contracts</td><td>Define the memory service interface first</td></tr>
+  <tr><td><a href="../lessons/0106-debug-like-a-scientist.html">0106</a></td><td>Debug Like a Scientist</td><td>Run the reproduce → 3-hypothesis loop</td></tr>
+  <tr><td><a href="../lessons/0107-verify-every-step.html">0107</a></td><td>Verify Every Step</td><td>Add a health-check command</td></tr>
+  <tr><td><a href="../lessons/0108-decide-under-uncertainty.html">0108</a></td><td>Decide Under Uncertainty</td><td>Decide your backend fork with a rule</td></tr>
+  <tr><td><a href="../lessons/0109-roles-and-autonomy.html">0109</a></td><td>Compartmentalize Roles &amp; Autonomy</td><td>Run builder vs reviewer separately</td></tr>
+  <tr><td><a href="../lessons/0110-write-for-future-you.html">0110</a></td><td>Write for Future-You &amp; Ask Like a Senior</td><td>A decision-bearing commit + a sharp question</td></tr>
+  <tr><td><a href="../lessons/0111-capstone-the-engineers-prompt.html">0111</a></td><td>Capstone: The Engineer's Prompt</td><td>Run one task through the whole build loop</td></tr>
+</table>
+
+<h2>Milestone A — Get a real graph running</h2>
+<table>
+  <tr><th>#</th><th>Lesson</th><th>Win</th></tr>
+  <tr><td><a href="../lessons/0001-falkordb-up-in-ten-minutes.html">0001</a></td><td>FalkorDB Up in Ten Minutes</td><td>A running instance answering a query</td></tr>
+  <tr><td><a href="../lessons/0002-cypher-for-memory.html">0002</a></td><td>Cypher for Memory</td><td>Write and read one memory in Cypher</td></tr>
+</table>
+
+<h2>Milestone B — The three-tier memory model</h2>
+<table>
+  <tr><th>#</th><th>Lesson</th><th>Win</th></tr>
+  <tr><td><a href="../lessons/0003-three-tier-memory-model.html">0003</a></td><td>The Three-Tier Memory Model</td><td>Your graph data model drawn</td></tr>
+  <tr><td><a href="../lessons/0004-episodic-conversation-history.html">0004</a></td><td>Episodic Memory: Conversation History</td><td>Turns persisted and recalled</td></tr>
+  <tr><td><a href="../lessons/0005-semantic-memory-facts.html">0005</a></td><td>Semantic Memory: Facts and Entities</td><td>A fact graph built from a message</td></tr>
+  <tr><td><a href="../lessons/0006-procedural-memory-playbooks.html">0006</a></td><td>Procedural Memory: Reusable Playbooks</td><td>A workflow subgraph replayed</td></tr>
+</table>
+
+<h2>Milestone C — Coordination and scale</h2>
+<table>
+  <tr><th>#</th><th>Lesson</th><th>Win</th></tr>
+  <tr><td><a href="../lessons/0007-multi-agent-handoffs.html">0007</a></td><td>Multi-Agent Coordination and Handoffs</td><td>A persisted handoff ledger</td></tr>
+  <tr><td><a href="../lessons/0008-per-tenant-isolation.html">0008</a></td><td>Per-Tenant Isolation with Multi-Graph</td><td>A separate graph per tenant</td></tr>
+  <tr><td><a href="../lessons/0009-high-concurrency.html">0009</a></td><td>High-Concurrency Reads and Writes</td><td>A concurrent writer test passing</td></tr>
+</table>
+
+<h2>Milestone D — Ship it</h2>
+<table>
+  <tr><th>#</th><th>Lesson</th><th>Win</th></tr>
+  <tr><td><a href="../lessons/0010-wire-cockpit-to-falkordb.html">0010</a></td><td>Wiring the Cockpit to Real FalkorDB</td><td>The UI reads a real graph</td></tr>
+  <tr><td><a href="../lessons/0011-explainable-answers.html">0011</a></td><td>Explainable Answers: Show the Path</td><td>A traced, sourced answer</td></tr>
+  <tr><td><a href="../lessons/0012-shipping-the-submission.html">0012</a></td><td>Shipping the Winning Submission</td><td>A complete submission packet</td></tr>
+</table>
+
+<h2>Reference shelf</h2>
+<p>
+<a href="insight.html">The Insight Page — findings + to-do</a> ·
+<a href="prompt-playbook.html">The Engineer's Prompt playbook</a> ·
+<a href="features.html">Feature set</a> ·
+<a href="exit-criteria.html">Deriving exit criteria</a> ·
+<a href="cypher-cheatsheet.html">Cypher cheat sheet</a> ·
+<a href="graph-schema.html">Graph data model</a> ·
+<a href="track02-checklist.html">Track 02 check-off list</a> ·
+<a href="concurrency.html">Concurrency &amp; isolation notes</a> ·
+<a href="../GLOSSARY.md">Glossary</a>
+</p>
+
+<footer>
+  <p>Every lesson cites its primary source. Stuck on any step? Ask your teacher in opencode.</p>
+</footer>
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

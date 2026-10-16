@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0002 — Cypher for Memory</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0002 · Track 02 — Agent Memory and Coordination</p>
+<h1>Cypher for Memory</h1>
+<p class="lede">The five Cypher clauses you need to write agent memory into FalkorDB and read it back — enough to engineer, debug, and direct AI on every memory query in the submission.</p>
+
+<p class="win">By the end you can <em>write one memory with MERGE and read it back with MATCH</em>, evidenced by a query returning the node you just stored.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="0001-falkordb-up-in-ten-minutes.html">Prev</a>
+  <a href="0003-three-tier-memory-model.html">Next →</a>
+  <a href="../reference/cypher-cheatsheet.html">Cypher cheat sheet</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p><strong>Agent memory</strong> is the persistent, queryable state your agent reads and writes across sessions. In this project that state lives in FalkorDB, and <strong>Cypher</strong> is how the code touches it. Every Track 02 key-focus point — <strong>episodic memory</strong>, <strong>semantic memory</strong>, handoffs, concurrency, per-tenant isolation — is ultimately a Cypher pattern match or update. Learn these five clauses and you can read the simulated backend in <code>src/graphsync_multi_agent_falkordb_memory_cockpit.tsx</code> and tell exactly what each query is meant to do.</p>
+
+<h2>The idea</h2>
+<p>A <strong>graph database</strong> stores data as <strong>nodes</strong> and <strong>edges (relationships)</strong>. Cypher draws patterns as ASCII art, then matches or creates them:</p>
+
+<pre><code>()-[]->()   // node -> relationship -> node
+(n:Session)             // a node variable n, labelled Session
+(a)-->(b)               // a to b, any relationship
+(u:User)-[:HAS]->(s)    // u HAS a relationship of type HAS to s</code></pre>
+
+<p>Five clauses carry almost all memory work. FalkorDB supports them as standard OpenCypher clauses:</p>
+
+<table>
+  <tr><th>Clause</th><th>What it does for memory</th></tr>
+  <tr><td><code>CREATE</code></td><td>Always adds new nodes/edges. Re-running it duplicates. Use only for truly new events.</td></tr>
+  <tr><td><code>MERGE</code></td><td>Matches the pattern, or creates it if absent. The memory-write primitive, because it is idempotent — safe to re-run.</td></tr>
+  <tr><td><code>MATCH</code></td><td>Finds existing patterns. The memory-read primitive.</td></tr>
+  <tr><td><code>WHERE</code></td><td>Filters a MATCH by property or comparison.</td></tr>
+  <tr><td><code>RETURN</code></td><td>Projects what the query gives back to the agent.</td></tr>
+</table>
+
+<h3>Why MERGE is the memory-write primitive</h3>
+<p>A memory write often retries — an agent restarts, a request replays, a demo is run twice. With <code>CREATE</code>, every re-run adds a second copy of the same fact. With <code>MERGE</code>, the second run finds the first and creates nothing. That is idempotent upsert, and it is why the memory layer of this project should never write a fact with <code>CREATE</code>.</p>
+
+<pre><code>// CREATE — run twice, get two nodes:
+CREATE (:Fact {id: 'user-likes-cypher', text: 'Alice likes Cypher'})
+
+// MERGE — run twice, still one node:
+MERGE (:Fact {id: 'user-likes-cypher', text: 'Alice likes Cypher'})</code></pre>
+
+<h3>One write, one read</h3>
+<p>Write a tiny piece of <strong>episodic memory</strong> — a session node linked to a user — using one MERGE per element so no duplicates appear:</p>
+
+<pre><code>MERGE (u:User {id: 'alice'})
+MERGE (s:Session {id: 's-001'})
+MERGE (u)-[:HAS_SESSION]->(s)</code></pre>
+
+<p>Read it back:</p>
+
+<pre><code>MATCH (u:User {id: 'alice'})-[:HAS_SESSION]->(s:Session)
+RETURN u.id AS user, s.id AS session</code></pre>
+
+<div class="quiz" data-answer="1" data-explain="MERGE matches the pattern first and only creates it when nothing matches, so re-running is safe. CREATE always inserts, so a second run duplicates the memory.">
+  <p class="q">You are writing a fact that may be submitted more than once because the agent retries. Which clause should you use?</p>
+  <button type="button">CREATE, because it always writes the fact</button>
+  <button type="button">MERGE, because it matches or creates and will not duplicate</button>
+  <button type="button">MATCH, because it reads before writing</button>
+  <p class="fb"></p>
+</div>
+
+<h2>Do it</h2>
+<ol class="steps">
+  <li>Make sure your FalkorDB instance from Lesson 0001 is running, then open its CLI:
+    <pre><code>docker exec -it falkordb redis-cli</code></pre>
+    You should see the prompt <code>127.0.0.1:6379&gt;</code>.</li>
+  <li>Write the memory into a graph named <code>memory</code> with MERGE:
+    <pre><code>GRAPH.QUERY memory "MERGE (u:User {id:'alice'}) MERGE (s:Session {id:'s-001'}) MERGE (u)-[:HAS_SESSION]->(s)"</code></pre>
+    Expected: a result line ending in <code>(0.00s)</code>, with <code>Nodes created: 2</code> and <code>Relationships created: 1</code>.</li>
+  <li>Run the exact same command again. Expected this time: <code>Nodes created: 0</code>, <code>Relationships created: 0</code> — MERGE matched instead of duplicating.</li>
+  <li>Read the memory back:
+    <pre><code>GRAPH.QUERY memory "MATCH (u:User {id:'alice'})-[:HAS_SESSION]->(s:Session) RETURN u.id, s.id"</code></pre>
+    Expected: a header row <code>u.id, s.id</code> and one row <code>alice, s-001</code>. That is the win.</li>
+  <li>Prove the difference: <code>GRAPH.QUERY memory "CREATE (:Fact {id:'x'})"</code> twice, then <code>MATCH (f:Fact) RETURN count(f)</code> — you get <code>2</code>. Swap <code>CREATE</code> for <code>MERGE</code> and the count stays <code>1</code>.</li>
+</ol>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>All syntax and clause semantics above come from the FalkorDB Cypher reference. <a href="https://docs.falkordb.com/cypher/">The Cypher query language — FalkorDB Docs</a>, with <a href="https://docs.falkordb.com/cypher/create">CREATE</a> and <a href="https://docs.falkordb.com/cypher/merge">MERGE</a> for the write-clause behaviour.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

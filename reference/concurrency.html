@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concurrency &amp; Isolation Notes — Track 02</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Reference</p>
+<h1>Concurrency &amp; Isolation Notes</h1>
+<p class="lede">Dense reference for the two Track 02 key-focus points you consult while coding: <strong>high-concurrency reads and writes</strong> and <strong>separate memory per user or tenant</strong>.</p>
+
+<p class="nav"><a href="../reference/CURRICULUM.html">← Curriculum</a><a href="cypher-cheatsheet.html">Cypher cheat sheet</a><a href="graph-schema.html">Graph data model</a><a href="track02-checklist.html">Check-off list</a></p>
+
+<h2>1. Why agent memory is write-heavy, and why FalkorDB</h2>
+
+<p><strong>Agent memory</strong> is the persistent, queryable state an agent reads and writes across sessions. In a coordination demo, every agent step both reads context and appends a result — an <strong>Episodic memory</strong> <strong>Node</strong> (the turn), often a <strong>Semantic memory</strong> update, and a <strong>Handoff</strong>. That read-modify-write loop runs once per step per agent, so the workload skews hard toward small writes with a traversal on every read.</p>
+
+<p>A <strong>Graph database</strong> stores data as <strong>Nodes</strong> and <strong>Edges (relationships)</strong> and traverses them directly. Because recall is a traversal rather than a join, the per-step read cost stays tied to the <strong>three-tier memory model</strong> fan-out you actually touch, and the whole thing can be expressed in <strong>Cypher</strong>. FalkorDB advertises itself as an "ultra-fast, multi-tenant Graph Database", is "Redis-based", and claims linear scalability. Its homepage comparison table reports single-digit-millisecond read latency (P50 36&#8202;ms, P95 74&#8202;ms, P99 83&#8202;ms in their chart) and roughly 100&#8202;MB vs 600&#8202;MB memory against a competitor.</p>
+
+<div class="callout"><strong>Be honest about the numbers.</strong> Those figures are FalkorDB's own vendor comparison chart on <a href="https://www.falkordb.com/">falkordb.com</a>, not a measurement of a concurrent-writer workload for an agent-memory workload. RESOURCES.md flags this as a Gap: <em>no verified benchmark data on high-concurrency write patterns for this exact use case</em>. Treat the vendor numbers as a starting point and produce <em>your own</em> numbers (section 7) to defend the design.</div>
+
+<h2>2. Idempotent writes: MERGE instead of CREATE</h2>
+
+<p><strong>MERGE</strong> "matches a pattern or creates it if it does not exist." That is the basis of an idempotent write: if the same <strong>Turn</strong> or fact is written twice — a retry, a duplicate event — <code>CREATE</code> makes a second <strong>Node</strong>, while <code>MERGE</code> binds to the existing one. Prefer <code>MERGE</code> for every entity you key by a natural identity (turn id, user id, tool name).</p>
+
+<table>
+<tr><th>Write</th><th>Clause</th><th>Retry behavior</th></tr>
+<tr><td>New fact / entity</td><td><code>MERGE (f:Fact {id:$id})</code></td><td>Idempotent — re-run is a no-op</td></tr>
+<tr><td>New turn</td><td><code>MERGE (t:Turn {id:$turnId})</code></td><td>Idempotent on the turn id</td></tr>
+<tr><td>Edge between known nodes</td><td><code>MERGE (a)-[:NEXT]->(b)</code></td><td>Safe when <code>a</code> and <code>b</code> are already <code>MATCH</code>ed</td></tr>
+<tr><td>Guaranteed-unique event</td><td><code>CREATE</code></td><td>Not retry-safe — duplicates</td></tr>
+</table>
+
+<pre><code>// Retry-safe turn append: bind the session, then MERGE the turn, then the edge.
+MATCH (s:Session {id: $sessionId})
+MERGE (t:Turn {id: $turnId})
+  ON CREATE SET t.role = $role, t.text = $text, t.ts = $ts
+MERGE (s)-[:HAS_TURN]-&gt;(t)
+RETURN t;</code></pre>
+
+<p>Two rules from the docs: merge each entity with its <em>own</em> <code>MERGE</code> rather than a full path, and use <code>ON CREATE SET</code> / <code>ON MATCH SET</code> to set properties conditionally. Merging a whole path (<code>MERGE (a)-[:R]-&gt;(b)</code> with new endpoints) can silently create duplicate <strong>Nodes</strong>, because a partial match fails and the entire path is created.</p>
+
+<h2>3. Append-over-rewrite</h2>
+
+<p>Never rewrite a whole session <strong>Node</strong> on each turn. A fat <code>SET s.history = [...]</code> makes every writer touch the same row-like hotspot and grows the write size linearly with session length. Append a small <strong>Turn</strong> node and link it instead — writes stay O(1) in size and stay independent per turn.</p>
+
+<table>
+<tr><th>Pattern</th><th>Per-turn write</th><th>Effect</th></tr>
+<tr><td>Rewrite session blob</td><td>Re-serialize whole session</td><td>Contention on one node; write size grows with length</td></tr>
+<tr><td>Append Turn node + edge</td><td>One small node, one edge</td><td>Constant-size write; turns never conflict</td></tr>
+<tr><td>Append Episodic + update a counter</td><td>Small node; <code>SET</code> on shared node</td><td>Counter is a hotspot — see section 6</td></tr>
+</table>
+
+<h2>4. One graph per tenant (multi-graph topology)</h2>
+
+<p><strong>Multi-graph / multi-tenant topology</strong> is FalkorDB's ability to hold thousands of isolated graphs in one instance, so each user or tenant gets a separate memory graph without a separate deployment. FalkorDB states it "natively supports multi-tenant and multigraph environments with zero overhead" and that each tenant's graph "operates in full isolation" for data security and privacy. The homepage advertises "10K+ multi-graphs (tenants)".</p>
+
+<p>The client selects the graph by name — no per-tenant server, no schema prefix. The graph is created automatically on first query; there is no <code>CREATE GRAPH</code> command.</p>
+
+<table>
+<tr><th>Client</th><th>Select a graph</th><th>Notes</th></tr>
+<tr><td>Python (<code>falkordb-py</code>)</td><td><code>g = fdb.select_graph('tenant1_graph')</code></td><td><code>g.query(...)</code> runs isolated</td></tr>
+<tr><td>Node/TS (<code>falkordb-ts</code>)</td><td><code>const g = fdb.selectGraph('tenant1_graph')</code></td><td>Created on first write</td></tr>
+<tr><td>Raw protocol</td><td><code>GRAPH.QUERY &lt;graphKey&gt; "..."</code></td><td>Graph key is the first argument</td></tr>
+</table>
+
+<pre><code># Python — one client, many isolated memory graphs
+fdb = FalkorDB(host="localhost", port=6379,
+               username="falkordb", password="your-password")
+tenant_graph = fdb.select_graph(f"tenant_{tenant_id}")
+tenant_graph.query("MATCH (t:Turn) RETURN t ORDER BY t.ts DESC LIMIT 20")</code></pre>
+
+<div class="callout"><strong>Isolation is a correctness boundary.</strong> A tenant graph is the unit of isolation. Do not carry a <code>tenant_id</code> property into a shared graph as your <em>only</em> isolation and call it multi-tenancy — use the topology so a query cannot cross tenants even if a predicate is forgotten. FalkorDB Cloud adds per-tenant "own data, queries, and access controls".</div>
+
+<h2>5. Connection usage</h2>
+
+<p>Create the client connection once and share it; open per-request connections only if you deliberately want a fresh session. The official clients (Python, Node.js, Java, Rust, Go, PHP, C#) are the supported path; FalkorDB speaks the Redis protocol and also supports Bolt. Because FalkorDB runs queries through a server-side thread pool, concurrency is bounded by the server, not by how many sockets you open.</p>
+
+<table>
+<tr><th>Parameter</th><th>What it controls</th><th>Source</th></tr>
+<tr><td><code>THREAD_COUNT</code></td><td>"maximum number of queries that can be processed concurrently"</td><td>Configuration docs</td></tr>
+<tr><td><code>OMP_THREAD_COUNT</code></td><td>parallelism <em>within</em> one query (GraphBLAS)</td><td>Configuration docs</td></tr>
+<tr><td><code>MAX_QUEUED_QUERIES</code></td><td>rejects with <code>Max pending queries exceeded</code> past the cap</td><td>Configuration docs</td></tr>
+<tr><td><code>TIMEOUT_MAX</code> / <code>TIMEOUT_DEFAULT</code></td><td>max / default query execution time (ms)</td><td>Configuration docs</td></tr>
+<tr><td><code>DELTA_MAX_PENDING_CHANGES</code></td><td>buffered changes; higher allows larger write batches</td><td>Configuration docs</td></tr>
+<tr><td><code>NODE_CREATION_BUFFER</code></td><td>parent matrix headroom; higher helps "write-heavy workloads"</td><td>Configuration docs</td></tr>
+</table>
+
+<pre><code>docker run -p 6379:6379 -it \
+  -e FALKORDB_ARGS="THREAD_COUNT 4 MAX_QUEUED_QUERIES 500" \
+  --rm falkordb/falkordb-server:latest</code></pre>
+
+<h2>6. Hot-node avoidance</h2>
+
+<p>A single <strong>Session</strong> or <strong>User</strong> <strong>Node</strong> that every writer updates is a serialization point: all concurrent turns queue behind that one key. Keep the fan-in node <em>read-mostly</em>, and push the volatile part out to appended nodes.</p>
+
+<table>
+<tr><th>Anti-pattern</th><th>Why it serialises</th><th>Fix</th></tr>
+<tr><td>Every turn <code>SET session.turn_count</code></td><td>All writers mutate one node</td><td>Append Turn nodes; derive count with <code>count()</code> at read time</td></tr>
+<tr><td>One shared <code>User</code> node holding latest state</td><td>Last-write-wins; contention</td><td>Append state-change nodes; keep <code>User</code> mostly static</td></tr>
+<tr><td>Global handoff counter</td><td>Fan-in on one node per handoff</td><td>Per-agent counters or no counter</td></tr>
+</table>
+
+<p>Design read as <code>MATCH (s:Session {id:$id})-[:HAS_TURN]-&gt;(t:Turn) RETURN t ORDER BY t.ts</code> — traversal over appended nodes instead of a mutable blob. This keeps writers independent, so server-side thread-pool concurrency (<code>THREAD_COUNT</code>) can actually be used across writers.</p>
+
+<h2>7. What to measure</h2>
+
+<p>Produce these yourself; there is no trusted third-party benchmark for this exact workload (RESOURCES.md Gap). Run N concurrent writers over your real Cypher, not a toy query.</p>
+
+<table>
+<tr><th>Metric</th><th>Why it matters to Track 02</th><th>Suggested target</th></tr>
+<tr><td>Write latency p50 / p95 / p99</td><td>Shows the traversal + append cost per turn</td><td>Report the spread, not an average</td></tr>
+<tr><td>Read (recall) latency p50 / p95</td><td>The per-agent-step traversal runs every step</td><td>Hold p95 flat as writers scale</td></tr>
+<tr><td>Error rate under N writers</td><td>Surfaces timeouts / queue rejections</td><td>Track <code>Max pending queries exceeded</code></td></tr>
+<tr><td>Throughput (writes/s)</td><td>Where <code>THREAD_COUNT</code> saturates</td><td>Find the knee; note it</td></tr>
+<tr><td>Cross-tenant leakage</td><td>Proof of isolation</td><td>Query tenant A for tenant B data; expect empty</td></tr>
+</table>
+
+<p>Keep the concurrent-writer test in the repo as runnable evidence — it is the artifact behind the Track 02 "high-concurrency reads and writes" focus point.</p>
+
+<div class="source">
+<h3>Sources</h3>
+<ul>
+<li>FalkorDB homepage — "ultra-fast, multi-tenant", "10K+ multi-graphs (tenants)", "Redis-based", linear scalability, latency/memory comparison chart, and the multi-tenant "zero overhead" FAQ: <a href="https://www.falkordb.com/">falkordb.com</a></li>
+<li>Client libraries (official Python/Node/Java/Rust/Go/PHP/C#, RESP + Bolt): <a href="https://docs.falkordb.com/getting-started/clients">docs.falkordb.com/getting-started/clients</a></li>
+<li>Configuration — <code>THREAD_COUNT</code>, <code>OMP_THREAD_COUNT</code>, <code>MAX_QUEUED_QUERIES</code>, <code>TIMEOUT_MAX</code>/<code>TIMEOUT_DEFAULT</code>, <code>DELTA_MAX_PENDING_CHANGES</code>, <code>NODE_CREATION_BUFFER</code>: <a href="https://docs.falkordb.com/getting-started/configuration.html">docs.falkordb.com/getting-started/configuration</a></li>
+<li>MERGE clause — match-or-create, ON CREATE/ON MATCH, path duplication warning: <a href="https://docs.falkordb.com/cypher/merge.html">docs.falkordb.com/cypher/merge</a></li>
+<li>Commands — graph key is the first argument; graph auto-created on first query: <a href="https://docs.falkordb.com/commands/">docs.falkordb.com/commands</a></li>
+<li>Multi-graph clients (<code>select_graph</code> / <code>selectGraph</code>, full isolation): <a href="https://www.falkordb.com/blog/falkordb-cloud-cluster-support-on-gcp">FalkorDB Cloud cluster / multi-graph blog</a></li>
+<li>Cloud multi-tenancy ("own data, queries, and access controls"): <a href="https://docs.falkordb.com/cloud/features">docs.falkordb.com/cloud/features</a></li>
+<li>Docker/persistence (AOF + snapshot, <code>falkordb-server</code> image): <a href="https://docs.falkordb.com/operations/docker">docs.falkordb.com/operations/docker</a></li>
+</ul>
+</div>
+
+<footer>
+  <p>Track 02 key-focus: high-concurrency reads and writes · separate memory per user or tenant. Gaps flagged per RESOURCES.md.</p>
+</footer>
+</body>
+</html>

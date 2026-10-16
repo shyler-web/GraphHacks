@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0104 — Engineer the Context</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 0104 · The Engineer's Prompt</p>
+<h1>Engineer the Context</h1>
+<p class="lede">The lever that moves AI output is not how you phrase the request — it is what the model can see when it runs. Control the input, and the words stop mattering so much.</p>
+
+<p class="win">By the end you can <em>sort your project's information into always / on-demand / never buckets</em>, evidenced by <em>a 5-line ALWAYS block ready to paste into AGENTS.md</em>.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="../reference/prompt-playbook.html">Prompt playbook</a>
+  <a href="0103-define-done-spec-cards.html">Prev: Spec Cards</a>
+  <a href="0105-decompose-and-contracts.html">Next: Decompose &amp; Contracts →</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>You are solo on a deadline. Every minute the agent spends re-reading your repo or acting on a stale assumption is a minute not building the demo. Context engineering is the highest-leverage skill in the whole playbook: teams that build structured context pipelines report <strong>20–45% faster cycles and 3–10× first-pass success</strong>, while teams that only polish prompts plateau (<a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">10xdev.blog, 2026</a>). It maps directly to your project: the graph is your memory layer, and <code>AGENTS.md</code> plus on-demand <code>graphify query</code> is how you feed the model without drowning it.</p>
+
+<h2>The idea</h2>
+<p>Stop asking “am I phrasing this correctly?” and start asking “does the agent have the right information?” (<a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">10xdev.blog</a>). Information you give an agent belongs in exactly one of three buckets:</p>
+
+<table>
+  <tr><th>Bucket</th><th>What goes in</th><th>Your tooling</th></tr>
+  <tr><td><strong>ALWAYS</strong><br>(injected at session start)</td><td>Project rules · current goal + exit criteria · locked decisions · health status</td><td><code>AGENTS.md</code></td></tr>
+  <tr><td><strong>ON DEMAND</strong><br>(pulled per task)</td><td>The relevant code, function contracts, and adjacent files for <em>this</em> task</td><td><code>graphify query</code></td></tr>
+  <tr><td><strong>NEVER</strong><br>(do not inject)</td><td>The entire codebase · resolved issues · completed specs</td><td>—</td></tr>
+</table>
+
+<p>Dumping everything does not help — it “overwhelms the agent, which loses focus and hallucinates details from the wrong files” (<a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">10xdev.blog</a>). It is like briefing a new hire with the goal, the constraints, and the relevant background — not a 200-page history and “figure it out.”</p>
+
+<div class="habit">
+  Before you type any prompt, name the bucket each piece of context is in. Default answer: <em>not in the prompt</em>. If it is not ALWAYS or needed for this task, it stays out until the agent asks.
+</div>
+
+<div class="prompt-diff">
+  <div class="weak">
+    <p>“Here is the whole <code>graphsync_multi_agent_falkordb_memory_cockpit.tsx</code> (all 1,800 lines). Add a tenant switch.”</p>
+  </div>
+  <div class="senior">
+    <p>“Goal: add a tenant switch. Exit: selecting a tenant runs <code>CREATE GRAPH</code> and the cockpit re-reads from it. Locked: FalkorDB only, no simulation. Here is the <code>useEffect</code> that loads memory and the query helper — edit these.”</p>
+  </div>
+</div>
+
+<div class="quiz" data-answer="2" data-explain="The agent reasons better over a small, relevant slice than over the whole repo. Whole-repo dumps cause focus loss and cross-file hallucination; unused context is budget spent for no gain.">
+  <p class="q">You need the agent to change one Cypher query. What goes in the prompt?</p>
+  <button type="button">The entire repo, so it has full context.</button>
+  <button type="button">Nothing — let it search the codebase itself.</button>
+  <button type="button">The one query plus the function contract that calls it.</button>
+  <p class="fb"></p>
+</div>
+
+<h2>Do it</h2>
+<ol class="steps">
+  <li>Open your project and write the four ALWAYS facts: the rules you build under (Track 02, real FalkorDB), the current goal and its exit criterion, the decisions already locked, and current health (what runs / what is simulated).</li>
+  <li>Compress each to one line. If a line is not true for every future session, it is ON DEMAND, not ALWAYS.</li>
+  <li>For your next task, use <code>graphify query "where is memory loaded"</code> to pull only the files that task touches — never paste the whole repo.</li>
+  <li>Save the ALWAYS block into <code>AGENTS.md</code> (the next lesson wires it into your workflow).</li>
+</ol>
+
+<div class="drill">
+  <p>Write the ALWAYS bucket for <em>your</em> project as five lines: <strong>Project rules</strong>, <strong>Current goal + exit criterion</strong>, <strong>Locked decisions</strong>, <strong>Health status</strong>, and one <strong>Never-inject reminder</strong>. Keep it in a scratch file now; you will move it into <code>AGENTS.md</code> next.</p>
+</div>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>“You Think It’s a Prompt Problem. It’s a Context Problem” — the always/on-demand/never context budget with its 2026 research figures: <a href="https://10xdev.blog/7-things-developers-get-wrong-about-ai-agents-2026/">7+ Things Every Developer Gets Wrong About AI Agents in 2026 — 10xdev.blog</a></p>
+  <p>Background on memory, planning, and tool contracts as the core of any agent: <a href="https://bigdataboutique.com/blog/everything-you-need-to-know-before-building-ai-agents">Everything You Need to Know Before Building AI Agents — BigData Boutique</a></p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

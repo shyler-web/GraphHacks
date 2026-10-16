@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Insight Page — GraphHacks Track 02</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks · Track 02 — Agent Memory and Coordination</p>
+<h1>The Insight Page</h1>
+<p class="lede">One page that joins the three things you keep in separate windows: what the lessons teach, what your project actually is right now (evidence, not vibes), and the exact ordered list of what to do next — each task carrying its exit criterion and its lesson.</p>
+
+<p class="win">By the end you can <em>see the whole build at once</em>, evidenced by <em>a dependency-ordered to-do list where every task has a checkable exit criterion and a rule-10/rule-3 tie-in</em>.</p>
+
+<nav class="nav">
+  <a href="CURRICULUM.html">← Curriculum</a>
+  <a href="track02-checklist.html">Track 02 check-off</a>
+  <a href="features.html">Feature set</a>
+  <a href="graph-schema.html">Data model</a>
+  <a href="prompt-playbook.html">Playbook</a>
+  <a href="../lessons/0111-capstone-the-engineers-prompt.html">Series capstone</a>
+</nav>
+
+<div class="callout">
+  <strong>How this page was built.</strong> Findings are grounded in two evidence sources, not invented: a live inspection of the repo (grep, <code>docker ps</code>, <code>nc -z 6379</code>, <code>package.json</code>, <code>vite.config.ts</code>) and the project's own knowledge graph (<code>graphify-out/graph.json</code> — 393 nodes · 555 edges · 28 communities, 81% EXTRACTED / 19% INFERRED). Every task below cites the lesson that teaches it.
+</div>
+
+<h2>1 · Where the project stands today (snapshot)</h2>
+<p>The teaching is complete — 23 lessons exist (0001–0012 build · 0101–0111 judgment). The <strong>product is still a simulation</strong>. These are the load-bearing facts, each one verified just now:</p>
+
+<table>
+  <tr><th>Finding</th><th>Evidence</th><th>Status</th></tr>
+  <tr><td>Memory is hard-coded React state, not a database</td><td>All nodes/edges/episodes live in <code>INITIAL_TENANTS</code> (cockpit line 88) held in <code>tenants</code> state</td><td><span class="status todo">simulated</span></td></tr>
+  <tr><td>No FalkorDB connection</td><td><code>falkordb</code> absent from <code>package.json</code>; port <code>6379</code> closed; no FalkorDB container running (only <code>glance</code>)</td><td><span class="status todo">not started</span></td></tr>
+  <tr><td>No backend route</td><td>zero matches for <code>api/graph</code> in <code>src/</code>; <code>vite.config.ts</code> has only <code>react()</code> — no <code>configureServer</code>, no <code>server.proxy</code></td><td><span class="status todo">not started</span></td></tr>
+  <tr><td>The only Cypher is never executed</td><td><code>liveCypherQuery</code> (line 492) is a <code>useMemo</code> string shown in a <code>&lt;pre&gt;</code>; only real fetch is the Gemini API (line 444)</td><td><span class="status todo">display only</span></td></tr>
+  <tr><td>The cockpit UI itself exists</td><td><code>App()</code> renders the canvas, maturity dial, domain lenses, panels</td><td><span class="status done">built</span></td></tr>
+  <tr><td>Repo is not under version control</td><td><code>git status</code> → "not a git repository"</td><td><span class="status todo">not started</span></td></tr>
+  <tr><td>No submission artifacts</td><td>No <code>README.md</code>, no <code>queries.cypher</code>, no demo video link, no deployment</td><td><span class="status todo">not started</span></td></tr>
+  <tr><td>Duplicate source: root copy + <code>src/</code> copy</td><td><code>graphsync_multi_agent_falkordb_memory_cockpit.tsx</code> exists at repo root <em>and</em> in <code>src/</code> (see §2)</td><td><span class="status partial">needs cleanup</span></td></tr>
+</table>
+
+<div class="callout">
+  <strong>The one-line verdict.</strong> Everything that would make this a valid Track 02 submission — a real graph doing real work — is still ahead of you. The good news: the UI, the graph <em>model</em>, and the teaching are done. You are wiring and proving, not inventing. Rule 3 is the line that matters: <em>if FalkorDB were removed, would the product still work?</em> Today, yes — because it never touches FalkorDB. That must flip to <strong>no</strong>.
+</div>
+
+<h2>2 · What the graph says about your project</h2>
+<p>Queried from <code>graphify-out/graph.json</code>. The structure reveals things reading files one at a time hides.</p>
+
+<div class="finding hi">
+  <p><strong>The duplication is structural, not just cosmetic.</strong> The graph holds <em>two</em> separate <code>App()</code> god-nodes (15 edges each) and two near-identical communities — "App() — god node" (cohesion 0.14) and "App" (cohesion 0.13) — one from the root copy, one from <code>src/</code>. Until one is removed, every query about "the app" is ambiguous and every AI session may edit the wrong file. <em>Fix in T0.2.</em></p>
+</div>
+
+<div class="finding med">
+  <p><strong>Your core abstraction is the memory model, and it's healthy.</strong> <code>Three-tier memory model</code> is the #1 god node at 22 edges; <code>Track 02 Curriculum</code> is the top cross-community bridge (betweenness 0.228). The <em>model</em> is well understood — the gap is that it exists only in docs, not in FalkorDB.</p>
+</div>
+
+<div class="finding med">
+  <p><strong>The graph asserts a route your code doesn't have.</strong> The edge <code>Reproduce Reliably --applied_to--> Node Backend Route /api/graph/nodes</code> is INFERRED, and the target <strong>does not exist</strong> (zero <code>api/graph</code> matches). This is the graph pointing at exactly the missing piece: the read path from <a href="../lessons/0010-wire-cockpit-to-falkordb.html">0010</a>. <em>Build in T4.1.</em></p>
+</div>
+
+<div class="finding lo">
+  <p><strong>Knowledge gaps to be aware of (not blockers).</strong> 100 isolated nodes and 14 thin communities — mostly config/deps (<code>postcss</code>, <code>tailwindcss</code>, <code>@types/react</code>) with ≤1 edge. 143 nodes total have ≤1 connection. One AMBIGUOUS edge: <code>Canvas Graph View → FalkorDB Instance</code>. 19% of edges are INFERRED (103) and 6 involve <code>App()</code> — model-reasoned, worth verifying as you wire the graph.</p>
+</div>
+
+<h2>3 · Every lesson → what it changes in your repo</h2>
+<p>The complete map. "Project artifact" is the concrete thing in <em>your</em> code the lesson produces; the status is the artifact's state today, not the lesson's (all lessons are written).</p>
+
+<h3>Build track — Milestones A–D</h3>
+<table>
+  <tr><th>#</th><th>Lesson</th><th>Project artifact it produces</th><th>Status</th></tr>
+  <tr><td><a href="../lessons/0001-falkordb-up-in-ten-minutes.html">0001</a></td><td>FalkorDB Up in Ten Minutes</td><td>A running FalkorDB instance answering a query</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td><a href="../lessons/0002-cypher-for-memory.html">0002</a></td><td>Cypher for Memory</td><td>The first real memory written &amp; read in Cypher</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td><a href="../lessons/0003-three-tier-memory-model.html">0003</a></td><td>The Three-Tier Memory Model</td><td>The drawn graph data model in the README</td><td><span class="status partial">model exists in docs</span></td></tr>
+  <tr><td><a href="../lessons/0004-episodic-conversation-history.html">0004</a></td><td>Episodic Memory</td><td>Turn nodes persisted &amp; recalled in order</td><td><span class="status todo">simulated</span></td></tr>
+  <tr><td><a href="../lessons/0005-semantic-memory-facts.html">0005</a></td><td>Semantic Memory</td><td>Entity/Fact nodes built from a message</td><td><span class="status todo">simulated</span></td></tr>
+  <tr><td><a href="../lessons/0006-procedural-memory-playbooks.html">0006</a></td><td>Procedural Memory</td><td>A Workflow subgraph fetched &amp; replayed</td><td><span class="status todo">simulated</span></td></tr>
+  <tr><td><a href="../lessons/0007-multi-agent-handoffs.html">0007</a></td><td>Multi-Agent Handoffs</td><td>A persisted <code>HANDED_TO</code> ledger with reason + timestamp</td><td><span class="status partial">UI-only ledger</span></td></tr>
+  <tr><td><a href="../lessons/0008-per-tenant-isolation.html">0008</a></td><td>Per-Tenant Isolation</td><td>One named graph per tenant; A sees 0 of B's nodes</td><td><span class="status partial">tenants faked</span></td></tr>
+  <tr><td><a href="../lessons/0009-high-concurrency.html">0009</a></td><td>High-Concurrency Writes</td><td>A passing concurrent-writer test (no loss, idempotent <code>MERGE</code>)</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td><a href="../lessons/0010-wire-cockpit-to-falkordb.html">0010</a></td><td>Wire Cockpit to FalkorDB</td><td><code>/api/graph/nodes</code> route; UI reads real nodes</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td><a href="../lessons/0011-explainable-answers.html">0011</a></td><td>Explainable Answers</td><td>An answer that returns the subgraph + sources it used</td><td><span class="status todo">simulated</span></td></tr>
+  <tr><td><a href="../lessons/0012-shipping-the-submission.html">0012</a></td><td>Shipping the Submission</td><td>README + queries + video + deployment packet</td><td><span class="status todo">not started</span></td></tr>
+</table>
+
+<h3>Judgment track — Milestone E (the habits that make A–D work)</h3>
+<table>
+  <tr><th>#</th><th>Lesson</th><th>What it changes in how you build</th><th>Apply it at</th></tr>
+  <tr><td><a href="../lessons/0101-the-engineers-prompt.html">0101</a></td><td>The Engineer's Prompt</td><td>State the exit criterion before any work</td><td>Every task below</td></tr>
+  <tr><td><a href="../lessons/0102-think-in-systems.html">0102</a></td><td>Think in Systems</td><td>Draw the <code>frontend → backend → FalkorDB → LLM</code> flow + 3 failure modes</td><td>T4.1 (before wiring)</td></tr>
+  <tr><td><a href="../lessons/0103-define-done-spec-cards.html">0103</a></td><td>Define Done: Spec Cards</td><td>A 5-point card per task, exit criterion first</td><td>Every task below</td></tr>
+  <tr><td><a href="../lessons/0104-engineer-the-context.html">0104</a></td><td>Engineer the Context</td><td>always/on-demand/never buckets in <code>AGENTS.md</code></td><td>T0.3</td></tr>
+  <tr><td><a href="../lessons/0105-decompose-and-contracts.html">0105</a></td><td>Decompose &amp; Contracts</td><td>Pin the memory-service interface, build one slice</td><td>T2.1</td></tr>
+  <tr><td><a href="../lessons/0106-debug-like-a-scientist.html">0106</a></td><td>Debug Like a Scientist</td><td>Repro → 3 hypotheses → cheapest test → root cause</td><td>T1.2</td></tr>
+  <tr><td><a href="../lessons/0107-verify-every-step.html">0107</a></td><td>Verify Every Step</td><td>A <code>verify:</code> line and <code>npm run health</code></td><td>T1.3</td></tr>
+  <tr><td><a href="../lessons/0108-decide-under-uncertainty.html">0108</a></td><td>Decide Under Uncertainty</td><td>A decision record per expensive-to-reverse choice</td><td>T2.1 (schema, backend)</td></tr>
+  <tr><td><a href="../lessons/0109-roles-and-autonomy.html">0109</a></td><td>Roles &amp; Autonomy</td><td>Builder vs reviewer sessions; Tier 1/2/3</td><td>Every build task</td></tr>
+  <tr><td><a href="../lessons/0110-write-for-future-you.html">0110</a></td><td>Write for Future-You</td><td>Decision-bearing commits; 4-part bug reports</td><td>T0.1, every commit</td></tr>
+  <tr><td><a href="../lessons/0111-capstone-the-engineers-prompt.html">0111</a></td><td>Capstone</td><td>Run one task through the whole loop</td><td>T4.1 (end-to-end dry run)</td></tr>
+</table>
+
+<h2>4 · Things to be done — the critical path</h2>
+<p>Dependency-ordered. Do not start a phase until the previous phase's exit criteria pass — errors compound (<a href="../lessons/0107-verify-every-step.html">0107</a>). Each task is a <a href="../lessons/0103-define-done-spec-cards.html">spec card</a>; each carries its <a href="../lessons/0106-debug-like-a-scientist.html">exit criterion</a>.</p>
+
+<h3>Phase 0 — Groundwork (do first, ~30 min)</h3>
+<table>
+  <tr><th>#</th><th>Task</th><th>Exit criterion (run this)</th><th>Lesson · Rule</th></tr>
+  <tr><td>T0.1</td><td><code>git init</code> + first commit</td><td><code>git log --oneline -1</code> shows the foundation</td><td><a href="../lessons/0110-write-for-future-you.html">0110</a> · rule 10</td></tr>
+  <tr><td>T0.2</td><td>Resolve the root↔<code>src/</code> duplication</td><td><code>grep -rl INITIAL_TENANTS .</code> returns exactly one path</td><td>§2 finding · rule 12</td></tr>
+  <tr><td>T0.3</td><td>Write the ALWAYS block into <code>AGENTS.md</code></td><td>4 lines present: rules, goal+exit, locked decisions, health</td><td><a href="../lessons/0104-engineer-the-context.html">0104</a></td></tr>
+</table>
+
+<h3>Phase 1 — Get a real graph running (<a href="CURRICULUM.html">Milestone A</a>)</h3>
+<table>
+  <tr><th>#</th><th>Task</th><th>Exit criterion (run this)</th><th>Lesson · Rule</th></tr>
+  <tr><td>T1.1</td><td>Run FalkorDB: <code>docker run -p 6379:6379 -p 3000:3000 -it --rm falkordb/falkordb:latest</code></td><td><code>nc -z localhost 6379</code> exits 0; browser UI at :3000</td><td><a href="../lessons/0001-falkordb-up-in-ten-minutes.html">0001</a> · rule 2</td></tr>
+  <tr><td>T1.2</td><td>Run the <a href="../lessons/0106-debug-like-a-scientist.html">debug drill</a> on the "6379 refused" failure</td><td>Expected/Observed/Repro written + 3 ranked hypotheses + cheapest test output</td><td><a href="../lessons/0106-debug-like-a-scientist.html">0106</a></td></tr>
+  <tr><td>T1.3</td><td>Add <code>npm run health</code> (<code>scripts/health.ts</code>)</td><td>Prints <code>MATCH (n) RETURN count(n)</code> — a number</td><td><a href="../lessons/0107-verify-every-step.html">0107</a></td></tr>
+  <tr><td>T1.4</td><td><code>npm install falkordb</code>; write &amp; read one node in Cypher</td><td>One <code>MERGE</code>-written node read back by id in the browser UI</td><td><a href="../lessons/0002-cypher-for-memory.html">0002</a></td></tr>
+</table>
+
+<h3>Phase 2 — The memory model (<a href="CURRICULUM.html">Milestone B</a>)</h3>
+<table>
+  <tr><th>#</th><th>Task</th><th>Exit criterion (run this)</th><th>Lesson · Rule</th></tr>
+  <tr><td>T2.1</td><td>Write the memory-service contract + decision record, then the schema</td><td>3 typed signatures with <code>throw 'not implemented'</code>; <code>docs/decisions.md</code> has the schema decision</td><td><a href="../lessons/0105-decompose-and-contracts.html">0105</a> · <a href="../lessons/0108-decide-under-uncertainty.html">0108</a></td></tr>
+  <tr><td>T2.2</td><td>Episodic: <code>write_turn</code> / <code>recall_turns</code> against FalkorDB</td><td>2 messages → 2 Turn nodes recalled in order</td><td><a href="../lessons/0004-episodic-conversation-history.html">0004</a> · key-focus</td></tr>
+  <tr><td>T2.3</td><td>Semantic: facts &amp; entities from a message</td><td>A message builds Entity/Fact nodes queryable by traversal</td><td><a href="../lessons/0005-semantic-memory-facts.html">0005</a> · key-focus</td></tr>
+  <tr><td>T2.4</td><td>Procedural: workflow subgraph write &amp; replay</td><td>A stored Workflow is fetched and re-executed on new input</td><td><a href="../lessons/0006-procedural-memory-playbooks.html">0006</a> · key-focus</td></tr>
+</table>
+
+<h3>Phase 3 — Coordination &amp; scale (<a href="CURRICULUM.html">Milestone C</a>)</h3>
+<table>
+  <tr><th>#</th><th>Task</th><th>Exit criterion (run this)</th><th>Lesson · Rule</th></tr>
+  <tr><td>T3.1</td><td>Handoff ledger: record <code>HANDED_TO</code> with reason + timestamp</td><td>Agent B reads A's recorded handoff via one query</td><td><a href="../lessons/0007-multi-agent-handoffs.html">0007</a> · key-focus</td></tr>
+  <tr><td>T3.2</td><td>Per-tenant isolation via one graph per tenant</td><td>Tenant A has 5 turns; tenant B sees 0</td><td><a href="../lessons/0008-per-tenant-isolation.html">0008</a> · key-focus</td></tr>
+  <tr><td>T3.3</td><td>Concurrent-writer test (N parallel writes, idempotent <code>MERGE</code>)</td><td>N writers → all N recorded, no duplicates/loss</td><td><a href="../lessons/0009-high-concurrency.html">0009</a> · key-focus</td></tr>
+</table>
+
+<h3>Phase 4 — Wire &amp; ship (<a href="CURRICULUM.html">Milestone D</a>)</h3>
+<table>
+  <tr><th>#</th><th>Task</th><th>Exit criterion (run this)</th><th>Lesson · Rule</th></tr>
+  <tr><td>T4.1</td><td>Add the Vite <code>configureServer</code> plugin serving <code>GET /api/graph/nodes</code></td><td><code>curl localhost:5173/api/graph/nodes</code> returns real node JSON</td><td><a href="../lessons/0010-wire-cockpit-to-falkordb.html">0010</a> · rule 3</td></tr>
+  <tr><td>T4.2</td><td>Cockpit fetches the real route; add the <a href="../lessons/0102-think-in-systems.html">0102</a> failure-mode map</td><td>Create node in browser → appears in UI on reload; <strong>stop FalkorDB → app errors</strong></td><td><a href="../lessons/0010-wire-cockpit-to-falkordb.html">0010</a> · <a href="../lessons/0102-think-in-systems.html">0102</a> · rule 3</td></tr>
+  <tr><td>T4.3</td><td>Explainable answers: return the subgraph + sources</td><td>An answer carries the nodes/edges it reasoned over</td><td><a href="../lessons/0011-explainable-answers.html">0011</a> · brief</td></tr>
+  <tr><td>T4.4</td><td>Submission packet: README + <code>queries.cypher</code> + video + deployment</td><td>All six rule-10 items present; rule-11 AI disclosure added</td><td><a href="../lessons/0012-shipping-the-submission.html">0012</a> · rules 10–11</td></tr>
+  <tr><td>T4.5</td><td>Rehearse explaining the model, queries, and decisions</td><td>You can answer rule-12 questions without opening the code</td><td><a href="../lessons/0108-decide-under-uncertainty.html">0108</a> · rule 12</td></tr>
+</table>
+
+<h2>5 · Risks &amp; gotchas (read before you build)</h2>
+<div class="finding hi">
+  <p><strong>The simulation is load-bearing and tempting.</strong> Every feature has a fake version already running, so the demo "works" with zero FalkorDB. That is exactly the rule-3 trap. Once T4.2 lands, stopping FalkorDB must visibly break the app — that flip is the whole submission.</p>
+</div>
+<div class="finding med">
+  <p><strong>Ambiguous "the app" file.</strong> Until T0.2, an AI session can edit the root copy while you run <code>src/</code>. The graph already shows two <code>App()</code> nodes. Kill the ambiguity first.</p>
+</div>
+<div class="finding med">
+  <p><strong>INFERRED edges are not verified facts.</strong> 103 edges are model-reasoned (<code>App()</code> has 6). Treat the graph's <em>structure</em> as a map; verify the connections against running code.</p>
+</div>
+<div class="finding lo">
+  <p><strong>Graph drift.</strong> After you wire real code, rebuild with <code>graphify update .</code> so the map tracks reality. Docs/HTML need an LLM pass (a key); code re-extracts automatically.</p>
+</div>
+
+<h2>6 · Rule compliance matrix</h2>
+<table>
+  <tr><th>Rule / focus</th><th>What it demands</th><th>Proved by</th><th>Status</th></tr>
+  <tr><td>Rule 3 — real work</td><td>Remove FalkorDB → product breaks</td><td>T4.2 demo</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Rule 10 — submission items</td><td>Repo, README+model, queries, video, deployment, track</td><td>T4.4</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Rule 11 — disclose AI use</td><td>State the assistant's role</td><td>T4.4</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Rule 12 — explain your code</td><td>Narrate model, queries, decisions</td><td>T4.5</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Key-focus: episodic</td><td>Timestamped interaction history</td><td>T2.2</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Key-focus: semantic</td><td>Durable facts &amp; relationships</td><td>T2.3</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Key-focus: procedural</td><td>Reusable workflow subgraphs</td><td>T2.4</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Key-focus: persistence</td><td>Survives session restart</td><td>T2.2, T4.2</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Key-focus: handoffs</td><td>Persisted shared state between agents</td><td>T3.1</td><td><span class="status partial">UI-only</span></td></tr>
+  <tr><td>Key-focus: concurrency</td><td>Parallel reads/writes without loss</td><td>T3.3</td><td><span class="status todo">todo</span></td></tr>
+  <tr><td>Key-focus: isolation</td><td>Separate memory per tenant</td><td>T3.2</td><td><span class="status partial">faked</span></td></tr>
+</table>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Track key-focus points, rule 3 ("real work"), rule 10 (submission items), rules 11–12. <a href="https://www.wemakedevs.org/hackathons/falkordb">WeMakeDevs · Graph Hacks event page</a> · <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">Graph Hacks rules</a>.</p>
+  <p>Findings: live repo inspection (2026-10-16) + <code>graphify-out/graph.json</code> / <code>GRAPH_REPORT.md</code> (393 nodes · 555 edges · 28 communities). Terms used exactly as in <a href="../GLOSSARY.md">GLOSSARY.md</a>.</p>
+</div>
+
+<footer>
+  <p>GraphHacks Track 02 · The Insight Page · <a href="CURRICULUM.html">curriculum</a> · <a href="track02-checklist.html">check-off</a> · every claim cites its source or its command.</p>
+</footer>
+</body>
+</html>

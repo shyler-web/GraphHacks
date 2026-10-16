@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 011 — Explainable Answers: Show the Path</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+</head>
+<body>
+<p class="lesson-meta">Lesson 011 · Track 02 — Agent Memory and Coordination</p>
+<h1>Explainable Answers: Show the Path</h1>
+<p class="lede">Return the path — not just the answer — so your agent can show the judge exactly how it got there.</p>
+
+<p class="win">By the end you can return a <strong>path</strong> from Cypher, expand it into the nodes and edges along the way, find "how are these connected" with <code>shortestPath</code>, and emit an answer payload that ships the answer, its <strong>subgraph</strong>, and its sources — evidenced by a traced, sourced answer you can show in the demo.</p>
+
+<nav class="nav">
+  <a href="../reference/CURRICULUM.html">← Curriculum</a>
+  <a href="0010-wire-cockpit-to-falkordb.html">Prev</a>
+  <a href="0012-shipping-the-submission.html">Next →</a>
+  <a href="../reference/cypher-cheatsheet.html">Cypher cheat sheet</a>
+</nav>
+
+<h2>Why this matters</h2>
+<p>Track 02 asks for <em>answers with clear sources</em>, and the hackathon brief repeats it: <em>explainable results</em> and <em>show the path behind an answer</em>. A judge scores your demo on whether they can trust it. A bare answer is a black box; an answer plus the <strong>Edge (relationship)</strong> trail that produced it is auditable. Your <code>liveCypherQuery</code> UI already runs Cypher — this lesson makes it return the trail too, so the Bubble-Up Alerting view can render <em>why</em> an alert fired, not just <em>that</em> it fired.</p>
+
+<h2>The idea</h2>
+<p>A <strong>Cypher</strong> query normally returns values. If you bind a whole pattern to a variable, it returns a <strong>path</strong> — the ordered sequence of <strong>Node</strong>s and <strong>Edge</strong>s that matched:</p>
+<pre><code>MATCH p=(a)-[:...]-&gt;(b) RETURN p</code></pre>
+<p>A path is one value, but you can unpack it with the path functions (FalkorDB supports these):</p>
+<ul>
+  <li><code>nodes(p)</code> — the list of nodes along the path.</li>
+  <li><code>relationships(p)</code> — the list of edges along the path.</li>
+  <li><code>length(p)</code> — the number of edges (hops) in the path.</li>
+</ul>
+<p>For "how are these two things connected?", the pattern is unbounded and you ask for the shortest route:</p>
+<pre><code>MATCH (a:Entity {name: 'Alice'}), (b:Entity {name: 'Billing'})
+WITH shortestPath((a)-[*]-&gt;(b)) AS p
+RETURN length(p), [n IN nodes(p) | n.name] AS pathNodes</code></pre>
+<p>The <code>shortestPath</code> argument is a traversal pattern whose endpoints must already be resolved, and no property filters may appear inside it. If there is more than one shortest path, only one is returned; use <code>allShortestPaths</code> when the trail could matter more than one route.</p>
+
+<div class="callout">
+  <strong>Provenance:</strong> <strong>Episodic memory</strong> is timestamped event nodes. To make an answer sourced, carry the event node's <code>ts</code> (and the node it came from) back up the path instead of discarding it. That timestamp is your citation.
+</div>
+
+<div class="quiz" data-answer="2" data-explain="Reviewers reward answers they can verify. Returning the path gives the judge the exact recollection trail — the event nodes, edges and timestamps — so the agent's answer is auditable and explainable, which is precisely the Track 02 'clear sources' requirement.">
+  <p class="q">Why does returning the path (not just the answer) matter most for judging?</p>
+  <button type="button">It makes the query run faster under high concurrency.</button>
+  <button type="button">It reduces the number of nodes stored in the graph.</button>
+  <button type="button">It lets the judge verify how the answer was reached, including the source memory nodes.</button>
+</div>
+
+<h2>Do it</h2>
+<ol class="steps">
+  <li>Return a whole path instead of a value. Bind the pattern to <code>p</code> and return it:
+    <pre><code>MATCH p=(:Session)-[:HAS_TURN]-&gt;(t:Turn)-[:MENTIONS]-&gt;(e:Entity)
+WHERE e.name = 'Billing'
+RETURN p</code></pre>
+    Expected: one row per matching trail, where column <code>p</code> holds the full path value (nodes + edges), not a scalar.
+  </li>
+  <li>Unpack the path into renderable pieces so the UI can draw it:
+    <pre><code>MATCH p=(:Session)-[:HAS_TURN]-&gt;(t:Turn)-[:MENTIONS]-&gt;(e:Entity)
+WHERE e.name = 'Billing'
+RETURN [n IN nodes(p) | n.name] AS nodes,
+       [r IN relationships(p) | type(r)] AS edges,
+       length(p) AS hops</code></pre>
+    Expected: <code>nodes</code> is a list of names, <code>edges</code> is a list of edge types in order, <code>hops</code> is an integer count of edges.
+  </li>
+  <li>Ask "how are these connected?" with the shortest path and carry provenance:
+    <pre><code>MATCH (a:Entity {name: 'Alice'}), (b:Entity {name: 'Billing'})
+WITH shortestPath((a)-[*]-&gt;(b)) AS p
+RETURN length(p) AS hops,
+       [n IN nodes(p) | n.name] AS pathNodes,
+       [t IN nodes(p) WHERE t.ts IS NOT NULL | {name: t.name, ts: t.ts}] AS sources</code></pre>
+    Expected (mirrors the docs' <code>A → D → F → G</code> example): a hop count, the ordered node names, and the subset of nodes carrying a timestamp — your citations.
+  </li>
+  <li>Shape the agent's answer payload so the cockpit can render answer + subgraph + sources together:
+    <pre><code>{
+  "answer": "Billing is why the alert fired.",
+  "hops": 3,
+  "subgraph": { "nodes": ["Alice", "Invoice", "Billing"], "edges": ["MENTIONS", "ABOUT"] },
+  "sources": [ { "node": "Turn:8123", "ts": 1760000000000 } ]
+}</code></pre>
+    Feed <code>subgraph.nodes</code> / <code>subgraph.edges</code> to your <code>liveCypherQuery</code> renderer and <code>sources</code> to the citations panel. The judge now sees the answer and the trail that justifies it.
+  </li>
+</ol>
+
+<div class="source">
+  <h3>Primary source</h3>
+  <p>Path functions and <code>shortestPath</code> usage (including the resolved-endpoint rule and the <code>nodes</code>/<code>relationships</code>/<code>length</code> functions). <a href="https://docs.falkordb.com/cypher/functions">Cypher Functions: Path functions — FalkorDB docs</a>, confirmed against <a href="https://docs.falkordb.com/algorithms/">Graph Algorithms — FalkorDB docs</a>.</p>
+</div>
+
+<footer>
+  <p>Written for the GraphHacks Track 02 mission. Stuck? Ask your teacher — open this repo in opencode and ask a follow-up question about this lesson.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>
