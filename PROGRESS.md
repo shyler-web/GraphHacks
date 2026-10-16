@@ -34,4 +34,6 @@ Living status. Update after every verified milestone (see `AGENTS.md` §Progress
 
 ## Recent commits
 
+- `docs(debug): T1.2 drill — "6379 refused" (ECONNREFUSED); FalkorDB restored UP` — reproduced by stopping container; root cause container stopped; 5 hypotheses tested; `nc` exit 1→0, `redis-cli PONG` after restart (2026-10-16)
+- `docs(progress): mark T1.1 done — FalkorDB up (nc -z localhost 6379 = 0)` (2026-10-16)
 - `chore(repo): remove root↔src duplicate cockpit (T0.2)` — root duplicate deleted; `src/` copy canonical; `npm run build` exit 0 (2026-10-16)
