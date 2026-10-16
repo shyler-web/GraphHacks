@@ -1,15 +1,9 @@
 {
-  "graphsync_multi_agent_falkordb_memory_cockpit.tsx": {
-    "mtime": 1792064232.5347266,
-    "seen": 1792065319.5101247,
-    "ast_hash": "5f0663683fdca7da4ca24311b6f95e68",
-    "semantic_hash": "5f0663683fdca7da4ca24311b6f95e68"
-  },
   "package.json": {
-    "mtime": 1792064858.881297,
-    "seen": 1792065319.5101275,
-    "ast_hash": "d010141abe5a1f7654ebd3a83a1fdb74",
-    "semantic_hash": "d010141abe5a1f7654ebd3a83a1fdb74"
+    "mtime": 1792151872.868123,
+    "seen": 1792152035.9248884,
+    "ast_hash": "d08b4c71b4cca2ee3aabf8837f53bf82",
+    "semantic_hash": ""
   },
   "postcss.config.js": {
     "mtime": 1792064871.5310152,
@@ -378,9 +372,9 @@
     "semantic_hash": ""
   },
   "PROGRESS.md": {
-    "mtime": 1792130932.0589797,
-    "seen": 1792131073.6791577,
-    "ast_hash": "8c7737d6dd59c253ed65f7ff15f5bc2a",
+    "mtime": 1792151985.8937464,
+    "seen": 1792152035.9249125,
+    "ast_hash": "67ecad5e2b676fd5b91953547114c9da",
     "semantic_hash": ""
   },
   "docs/decisions.md": {
@@ -435,6 +429,24 @@
     "mtime": 1792131037.0038736,
     "seen": 1792131073.6792085,
     "ast_hash": "e190b8b680257e2fbe483245a987ee26",
+    "semantic_hash": ""
+  },
+  "scripts/health.mjs": {
+    "mtime": 1792151869.6533515,
+    "seen": 1792152035.9248912,
+    "ast_hash": "b45c9ce17a1c09e5646fcc30efd40e70",
+    "semantic_hash": ""
+  },
+  "scripts/smoke-write-read.mjs": {
+    "mtime": 1792151880.5332778,
+    "seen": 1792152035.9248924,
+    "ast_hash": "ae1ebf93215be9d2ea41b8f2ee7f94ab",
+    "semantic_hash": ""
+  },
+  "docs/debug-drills/0001-falkordb-port-6379-refused.md": {
+    "mtime": 1792151633.6409006,
+    "seen": 1792152035.9249146,
+    "ast_hash": "a3aa9697800d8ec48547c99cdf86928c",
     "semantic_hash": ""
   }
 }

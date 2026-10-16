@@ -1,28 +1,35 @@
 # Graph Report - GraphHacks  (2026-10-16)
 
 ## Corpus Check
-- 16 files · ~50,663 words
+- 30 files · ~65,323 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 3 file(s) not represented in the graph (top: .css 3)
+- Unclassified: 5 file(s) not represented in the graph (top: .css 3, .example 1, (none) 1)
 
 ## Summary
-- 393 nodes · 555 edges · 28 communities (14 shown, 14 thin omitted)
-- Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 103 edges (avg confidence: 0.88)
+- 466 nodes · 614 edges · 48 communities (25 shown, 23 thin omitted)
+- Extraction: 83% EXTRACTED · 17% INFERRED · 0% AMBIGUOUS · INFERRED: 103 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
+## Graph Freshness
+- Built from commit: `4a66c090`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
+
 ## Community Hubs (Navigation)
-- Agent memory
+- Three-tier memory model
 - The Engineer's Prompt Playbook
 - Five-Part Spec Card
 - package.json
-- Seven Engineering Habits
+- GraphHacks — Track 02 (Agent Memory and Coordination)
 - App() — god node
-- Handoff
+- bash
+- One Graph Per Tenant
 - App
-- Three-tier memory model
+- Track 02 Curriculum
 - App
 - compilerOptions
 - Graph Hacks Track 02 Resources
+- Cypher Path Returned as a Value
 - GraphSync — Multi-Agent FalkorDB Memory Cockpit
 - spec-card.js
 - getSvgCoords
@@ -36,6 +43,16 @@
 - Rule 12 — Understand and Explain Submitted Code
 - handleCanvasPointerDown
 - handleCanvasPointerUp
+- Reproduce Reliably
+- Decision Records — GraphHacks Track 02
+- Memory Service Contract
+- Handoff
+- Node Backend Route /api/graph/nodes
+- Track 02 Build
+- Lesson 0010 — Wiring the Cockpit to Real FalkorDB
+- Verify Every Step
+- Progress — GraphHacks Track 02
+- Prompt Playbook
 
 ## God Nodes (most connected - your core abstractions)
 1. `Three-tier memory model` - 22 edges
@@ -46,8 +63,8 @@
 6. `App() — god node` - 12 edges
 7. `Track 02 Curriculum` - 12 edges
 8. `FalkorDB` - 11 edges
-9. `Episodic Memory` - 10 edges
-10. `The Engineer's Prompt Playbook` - 10 edges
+9. `GraphHacks — Track 02 (Agent Memory and Coordination)` - 10 edges
+10. `Episodic Memory` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Episodic Memory` --composed_of--> `Turn Appended to Session`  [EXTRACTED]
@@ -56,10 +73,10 @@
   lessons/0004-episodic-conversation-history.html → graphsync_multi_agent_falkordb_memory_cockpit.tsx
 - `Provenance edges (MENTIONED_IN)` --links_to--> `Episodic Memory`  [INFERRED]
   lessons/0005-semantic-memory-facts.html → graphsync_multi_agent_falkordb_memory_cockpit.tsx
+- `Lesson Template` --templates--> `Lesson 0001 — FalkorDB Up in Ten Minutes`  [INFERRED]
+  assets/lesson-template.html → lessons/0001-falkordb-up-in-ten-minutes.html
 - `Lesson 0001 — FalkorDB Up in Ten Minutes` --references--> `FalkorDB`  [EXTRACTED]
   lessons/0001-falkordb-up-in-ten-minutes.html → graphsync_multi_agent_falkordb_memory_cockpit.tsx
-- `Graph data model deliverable` --produced_by--> `Lesson 0003 — The Three-Tier Memory Model`  [INFERRED]
-  MISSION.md → lessons/0003-three-tier-memory-model.html
 
 ## Import Cycles
 - None detected.
@@ -78,55 +95,63 @@
 - **Maturity Dial x Domain Lens Graph View** — src_graphsync_multi_agent_falkordb_memory_cockpit_app, src_graphsync_multi_agent_falkordb_memory_cockpit_persona_levels, src_graphsync_multi_agent_falkordb_memory_cockpit_domain_lenses, src_graphsync_multi_agent_falkordb_memory_cockpit_visible_nodes, src_graphsync_multi_agent_falkordb_memory_cockpit_live_cypher_query [INFERRED 0.95]
 - **Three-Tier FalkorDB Memory Model** — src_graphsync_multi_agent_falkordb_memory_cockpit_initial_tenants, src_graphsync_multi_agent_falkordb_memory_cockpit_falkordb_agent_memory, src_graphsync_multi_agent_falkordb_memory_cockpit_playbook_guardrails, src_graphsync_multi_agent_falkordb_memory_cockpit_semantic_graph_nodes [INFERRED 0.95]
 
-## Communities (28 total, 14 thin omitted)
+## Communities (48 total, 23 thin omitted)
 
-### Community 0 - "Agent memory"
-Cohesion: 0.09
-Nodes (40): Lesson Template, Agent memory, Edge (relationship), Graph database, GraphRAG, MERGE, Node, Episodic Memory (+32 more)
+### Community 0 - "Three-tier memory model"
+Cohesion: 0.07
+Nodes (59): Agent memory, Cypher, Edge (relationship), Graph database, GraphRAG, MERGE, Node, Three-tier memory model (+51 more)
 
 ### Community 1 - "The Engineer's Prompt Playbook"
 Cohesion: 0.06
-Nodes (48): Exit criterion, Reversible decision, Spec card, Five-Point Spec Card, Compounding Error, Evidence Before Assertions, Health-Check Command, Per-Action Verification (+40 more)
+Nodes (49): Lesson Template, Exit criterion, Reversible decision, Spec card, Five-Point Spec Card, Compounding Error, Evidence Before Assertions, Health-Check Command (+41 more)
 
 ### Community 2 - "Five-Part Spec Card"
-Cohesion: 0.09
-Nodes (24): Cockpit Simulation (INITIAL_TENANTS), Lesson 0010 — Wiring the Cockpit to Real FalkorDB, liveCypherQuery, Explainable Answer Payload, Lesson 0011 — Explainable Answers: Show the Path, Cypher Path Returned as a Value, Path Functions (nodes/relationships/length), Provenance via Event Node Timestamp (+16 more)
+Cohesion: 0.20
+Nodes (10): liveCypherQuery, Explainable Answer Payload, Provenance via Event Node Timestamp, Answer Subgraph, Exit Criterion (Verifiable Check), Five-Part Spec Card, Locked Decisions, Out of Scope (+2 more)
 
 ### Community 3 - "package.json"
 Cohesion: 0.07
 Nodes (29): dependencies, lucide-react, react, react-dom, devDependencies, autoprefixer, postcss, tailwindcss (+21 more)
 
-### Community 4 - "Seven Engineering Habits"
-Cohesion: 0.06
-Nodes (33): Commands, Context graph — use graphify FIRST, GraphHacks — Track 02 (Agent Memory and Coordination), Teaching workspace, Horizontal slab, Regression test, Vertical slice, Decision-Making / Autonomy Tiers (+25 more)
+### Community 4 - "GraphHacks — Track 02 (Agent Memory and Coordination)"
+Cohesion: 0.09
+Nodes (21): AI disclosure, ALWAYS — locked context (do not reopen without recording a decision), Commands, Context graph — use graphify FIRST, Git workflow — commit and push continuously, GraphHacks — Track 02 (Agent Memory and Coordination), Security — non-negotiable, Stack (+13 more)
 
 ### Community 5 - "App() — god node"
 Cohesion: 0.14
 Nodes (25): App() — god node, callGeminiWithBackoff · resilient LLM calls (retry + backoff), Canvas Graph View, Controls · Maturity Dial L0–L5 + Domain Lenses, Cypher Traversal · liveCypherQuery, Episodic Memory (past interactions, timestamped), FalkorDB Instance · multi-graph topology, Gemini API (external LLM) (+17 more)
 
-### Community 7 - "Handoff"
+### Community 6 - "bash"
 Cohesion: 0.06
-Nodes (35): Handoff, 4-Agent Squad, HANDED_TO Edge, Handoff Ledger, Lesson 0007 — Multi-Agent Coordination and Handoffs, Idempotent MERGE Write, Persisted State Beats Message Passing, Isolation vs. Cross-Tenant Analytics Trade-off (+27 more)
+Nodes (32): cat .env*, docker *, git *, graphify *, ls *, npm *, npx *, rm -rf * (+24 more)
+
+### Community 7 - "One Graph Per Tenant"
+Cohesion: 0.18
+Nodes (12): Lesson 0007 — Multi-Agent Coordination and Handoffs, Isolation vs. Cross-Tenant Analytics Trade-off, Lesson 0008 — Per-Tenant Isolation with Multi-Graph, Memory Node, FalkorDB Multi-Graph / Multi-Tenant Topology, One Graph Per Tenant, select_graph / selectGraph, Avoid a Single Hot Node (+4 more)
 
 ### Community 8 - "App"
-Cohesion: 0.13
-Nodes (23): react, App(), Bubble-Up Senior Guardian Alerting, bubbleUpRisks, Builder Maturity Levels (L0-L5), callGeminiWithBackoff, Cognitive Debt, DOMAIN_LENSES (+15 more)
+Cohesion: 0.12
+Nodes (24): lucide-react, react, App(), Bubble-Up Senior Guardian Alerting, bubbleUpRisks, Builder Maturity Levels (L0-L5), callGeminiWithBackoff, Cognitive Debt (+16 more)
 
-### Community 9 - "Three-tier memory model"
-Cohesion: 0.07
-Nodes (42): Multi-graph / multi-tenant topology, Three-tier memory model, Learner Initial State Record, Track 02 — Agent Memory and Coordination, Track 02 Curriculum, Milestone A — Get a Real Graph Running, Milestone B — The Three-Tier Memory Model, Milestone C — Coordination and Scale (+34 more)
+### Community 9 - "Track 02 Curriculum"
+Cohesion: 0.09
+Nodes (25): Multi-graph / multi-tenant topology, Track 02 Curriculum, Milestone A — Get a Real Graph Running, Milestone B — The Three-Tier Memory Model, Milestone C — Coordination and Scale, Milestone D — Ship It, CREATE Clause, FalkorDB Cypher (+17 more)
 
 ### Community 10 - "App"
-Cohesion: 0.14
-Nodes (23): Cypher, App(), Bubble-Up Alerting, Builder Maturity Dial, callGeminiWithBackoff, Cognitive Debt, Cypher Traversal, DOMAIN_LENSES (+15 more)
+Cohesion: 0.19
+Nodes (18): App(), Bubble-Up Alerting, Builder Maturity Dial, callGeminiWithBackoff, Cognitive Debt, Cypher Traversal, DOMAIN_LENSES, FalkorDB (+10 more)
 
 ### Community 11 - "compilerOptions"
 Cohesion: 0.11
 Nodes (17): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleResolution, noEmit (+9 more)
 
 ### Community 12 - "Graph Hacks Track 02 Resources"
-Cohesion: 0.12
-Nodes (17): Autonomy tier, Systems thinking, Boundaries and Interfaces, Emergence, Feedback Loops, Resilience, Retry Storm, Mission: Ship a winning GraphHacks Track 02 project (+9 more)
+Cohesion: 0.08
+Nodes (25): Autonomy tier, Horizontal slab, Systems thinking, Vertical slice, Decision-Making / Autonomy Tiers, Decomposition / Contracts, Per-Step Verification, Scientific Debugging (+17 more)
+
+### Community 13 - "Cypher Path Returned as a Value"
+Cohesion: 0.15
+Nodes (14): Handoff Ledger, Persisted State Beats Message Passing, handleRunMultiAgentPrompt, Lesson 0011 — Explainable Answers: Show the Path, Cypher Path Returned as a Value, Path Functions (nodes/relationships/length), shortestPath, 2-Minute Demo Video (+6 more)
 
 ### Community 14 - "GraphSync — Multi-Agent FalkorDB Memory Cockpit"
 Cohesion: 0.40
@@ -136,28 +161,64 @@ Nodes (6): FalkorDB, GraphSync — Multi-Agent FalkorDB Memory Cockpit, GraphSyn
 Cohesion: 0.67
 Nodes (3): getSvgCoords, handleCanvasPointerMove, handleNodePointerDown
 
+### Community 30 - "Reproduce Reliably"
+Cohesion: 0.20
+Nodes (10): Regression test, Lesson 0105 — Decompose & Design Contracts, Cheapest Discriminating Test, Confident Fix for an Unreproduced Bug, Hypothesis Table, Lesson 0106 — Debug Like a Scientist, Rank by Likelihood x Ease of Test, Reproduce Reliably (+2 more)
+
+### Community 31 - "Decision Records — GraphHacks Track 02"
+Cohesion: 0.29
+Nodes (6): D1 · Backend + agent language: Node.js + TypeScript, D2 · Multi-agent orchestration: hand-rolled workflow first, D3 · Observability: LangSmith, D4 · Deployment: local Docker Compose first, cloud second, D5 · Memory model: three-tier in one connected graph, Decision Records — GraphHacks Track 02
+
+### Community 32 - "Memory Service Contract"
+Cohesion: 0.29
+Nodes (7): Append a Turn, Don't Rewrite a Session, Turn Appended to Session, Interface-First Contract, Memory Service Contract, recall_turns(user, topic), record_handoff(from, to, reason), write_turn(user, session, text)
+
+### Community 33 - "Handoff"
+Cohesion: 0.33
+Nodes (6): Handoff, 4-Agent Squad, HANDED_TO Edge, Idempotent MERGE Write, Idempotent MERGE Writes, Documented GAP: shared multi-agent handoff patterns
+
+### Community 34 - "Node Backend Route /api/graph/nodes"
+Cohesion: 0.33
+Nodes (6): falkordb-ts Node Client, graph.query() API, handleApplySeniorFix, Node Backend Route /api/graph/nodes, FalkorDB Speaks RESP over TCP, Vite Dev-Server Plugin (configureServer)
+
+### Community 35 - "Track 02 Build"
+Cohesion: 0.33
+Nodes (5): Build order (authoritative: `reference/insight.html` §4), Five key-focus points to prove (the judging criteria), Locked stack, Non-negotiables, Track 02 Build
+
+### Community 36 - "Lesson 0010 — Wiring the Cockpit to Real FalkorDB"
+Cohesion: 0.40
+Nodes (5): Cockpit Simulation (INITIAL_TENANTS), Lesson 0010 — Wiring the Cockpit to Real FalkorDB, Blast Radius, App Data Flow Map, Failure-Mode Analysis
+
+### Community 37 - "Verify Every Step"
+Cohesion: 0.40
+Nodes (4): Rules, The loop, This project's checks, Verify Every Step
+
+### Community 38 - "Progress — GraphHacks Track 02"
+Cohesion: 0.40
+Nodes (4): Blockers / notes, Current status, Progress — GraphHacks Track 02, Recent commits
+
 ## Ambiguous Edges - Review These
 - `Canvas Graph View` → `FalkorDB Instance · multi-graph topology`  [AMBIGUOUS]
   architecture-diagram.svg · relation: references
 
 ## Knowledge Gaps
 - **100 isolated node(s):** `@types/react`, `@types/react-dom`, `autoprefixer`, `postcss`, `tailwindcss` (+95 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 143 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 201 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Track 02 Curriculum` connect `Three-tier memory model` to `Agent memory`, `The Engineer's Prompt Playbook`?**
-  _High betweenness centrality (0.228) - this node is a cross-community bridge._
+- **Why does `Track 02 Curriculum` connect `Track 02 Curriculum` to `Three-tier memory model`, `The Engineer's Prompt Playbook`?**
+  _High betweenness centrality (0.168) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `Three-tier memory model` (e.g. with `Agent memory` and `The Three-Tier Trick`) actually correct?**
   _`Three-tier memory model` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `@types/react`, `@types/react-dom`, `autoprefixer` to the rest of the system?**
   _100 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Agent memory` be split into smaller, more focused modules?**
-  _Cohesion score 0.08846153846153847 - nodes in this community are weakly interconnected._
+- **Should `Three-tier memory model` be split into smaller, more focused modules?**
+  _Cohesion score 0.06545879602571596 - nodes in this community are weakly interconnected._
 - **Why does `react` connect `App` to `App`, `package.json`, `App() — god node`?**
-  _High betweenness centrality (0.202) - this node is a cross-community bridge._
+  _High betweenness centrality (0.146) - this node is a cross-community bridge._
 - **Are the 6 inferred relationships involving `App()` (e.g. with `Bubble-Up Alerting` and `Builder Maturity Dial`) actually correct?**
   _`App()` has 6 INFERRED edges - model-reasoned connections that need verification._
 

@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "reference/CURRICULUM.html": {
-    "mtime": 1792128146.703873,
-    "seen": 1792128154.60448,
-    "ast_hash": "6a429eeca8b6d96a1f057f8e41d3eed6",
+    "mtime": 1792131051.9006739,
+    "seen": 1792131073.6791964,
+    "ast_hash": "c6d0bb0850d83084bbd932b125da14b7",
     "semantic_hash": ""
   },
   "reference/concurrency.html": {
@@ -288,9 +288,9 @@
     "semantic_hash": "632b58f2aa95a1763e9aee38b5acde7e"
   },
   "AGENTS.md": {
-    "mtime": 1792126900.0002089,
-    "seen": 1792127924.4260776,
-    "ast_hash": "e37cb951c25842fb1aae911ade4d8b0a",
+    "mtime": 1792130939.722847,
+    "seen": 1792131073.6791527,
+    "ast_hash": "51c85ceb7ef70aa491846c65f34eca8b",
     "semantic_hash": ""
   },
   "lessons/0111-capstone-the-engineers-prompt.html": {
@@ -300,9 +300,141 @@
     "semantic_hash": ""
   },
   "reference/insight.html": {
-    "mtime": 1792128146.5188901,
-    "seen": 1792128154.604486,
-    "ast_hash": "97e32fb777974723cea81986c15cbcbc",
+    "mtime": 1792131055.800949,
+    "seen": 1792131073.679205,
+    "ast_hash": "d7c8a2fb4de76e814a6d4383290fc356",
+    "semantic_hash": ""
+  },
+  "opencode.json": {
+    "mtime": 1792130940.7429588,
+    "seen": 1792131073.6791306,
+    "ast_hash": "668dd385225197018963f9c9df72178e",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/builder.md": {
+    "mtime": 1792130955.1264791,
+    "seen": 1792131073.6791422,
+    "ast_hash": "9b45ff39adb3a5c1161f9b318c0ca166",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/debugger.md": {
+    "mtime": 1792130956.9546652,
+    "seen": 1792131073.6791432,
+    "ast_hash": "8f17420ebe40f69283f48bb66cdb263f",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/gitter.md": {
+    "mtime": 1792130958.2797992,
+    "seen": 1792131073.6791444,
+    "ast_hash": "47162c7708f48d52dcdcae8f394f295d",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/graphify-keeper.md": {
+    "mtime": 1792130959.4289148,
+    "seen": 1792131073.6791456,
+    "ast_hash": "18ea35738d58f34fd295eb42d6a11e45",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/planner.md": {
+    "mtime": 1792130953.810344,
+    "seen": 1792131073.6791465,
+    "ast_hash": "5b8c87e041fda6e58aa4f72d810248a5",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/researcher.md": {
+    "mtime": 1792130951.2820826,
+    "seen": 1792131073.6791472,
+    "ast_hash": "fc7e2392474dc62af75116e0e71b5c92",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/reviewer.md": {
+    "mtime": 1792130956.1225808,
+    "seen": 1792131073.6791482,
+    "ast_hash": "c9cad5d877630dacda1457976cae5e9e",
+    "semantic_hash": ""
+  },
+  ".opencode/agent/teacher.md": {
+    "mtime": 1792130952.878248,
+    "seen": 1792131073.679149,
+    "ast_hash": "07992cab09a911b18480cd9a048106b9",
+    "semantic_hash": ""
+  },
+  ".opencode/skills/prompt-playbook/SKILL.md": {
+    "mtime": 1792130969.5059035,
+    "seen": 1792131073.6791499,
+    "ast_hash": "2a1d8585faa103e3d1aa9c3a53d96501",
+    "semantic_hash": ""
+  },
+  ".opencode/skills/track02-build/SKILL.md": {
+    "mtime": 1792130972.353201,
+    "seen": 1792131073.6791506,
+    "ast_hash": "9d01be74c25bf3944c0bb17e4a572c8a",
+    "semantic_hash": ""
+  },
+  ".opencode/skills/verify-change/SKILL.md": {
+    "mtime": 1792130970.5457406,
+    "seen": 1792131073.6791513,
+    "ast_hash": "e20f12ab92547b390869fc3d95bd5a7a",
+    "semantic_hash": ""
+  },
+  "PROGRESS.md": {
+    "mtime": 1792130932.0589797,
+    "seen": 1792131073.6791577,
+    "ast_hash": "8c7737d6dd59c253ed65f7ff15f5bc2a",
+    "semantic_hash": ""
+  },
+  "docs/decisions.md": {
+    "mtime": 1792130929.4446902,
+    "seen": 1792131073.6791613,
+    "ast_hash": "d178633e1576969b126e1eab4e990402",
+    "semantic_hash": ""
+  },
+  "lessons/0201-pick-your-stack.html": {
+    "mtime": 1792131018.7252655,
+    "seen": 1792131073.679191,
+    "ast_hash": "d8034034ed3f39745754d23b141c7aa5",
+    "semantic_hash": ""
+  },
+  "lessons/0202-where-every-tool-lives.html": {
+    "mtime": 1792131024.0677903,
+    "seen": 1792131073.679192,
+    "ast_hash": "868daecb1233fe14fde1ed704790ac5e",
+    "semantic_hash": ""
+  },
+  "lessons/0203-configure-opencode.html": {
+    "mtime": 1792131023.458458,
+    "seen": 1792131073.6791933,
+    "ast_hash": "8229a90780616afaabb19976d240de8f",
+    "semantic_hash": ""
+  },
+  "lessons/0204-git-and-github-flow.html": {
+    "mtime": 1792131017.8611195,
+    "seen": 1792131073.6791945,
+    "ast_hash": "1d36525b4b721aa97a1770d71c9981c5",
+    "semantic_hash": ""
+  },
+  "lessons/0205-extend-to-tracks-1-and-3.html": {
+    "mtime": 1792131028.9479835,
+    "seen": 1792131073.6791952,
+    "ast_hash": "8b2f2b6c518b8d0a2df746cb64761bd0",
+    "semantic_hash": ""
+  },
+  "reference/git-workflow.html": {
+    "mtime": 1792131028.1920469,
+    "seen": 1792131073.6792023,
+    "ast_hash": "0862d5ffd0507a641fa0cd04fb3af894",
+    "semantic_hash": ""
+  },
+  "reference/opencode-setup.html": {
+    "mtime": 1792131034.2305942,
+    "seen": 1792131073.6792061,
+    "ast_hash": "02bfa88b1066172985c428fed3d88b81",
+    "semantic_hash": ""
+  },
+  "reference/tool-integration.html": {
+    "mtime": 1792131037.0038736,
+    "seen": 1792131073.6792085,
+    "ast_hash": "e190b8b680257e2fbe483245a987ee26",
     "semantic_hash": ""
   }
 }
