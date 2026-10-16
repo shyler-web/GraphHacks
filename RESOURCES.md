@@ -62,6 +62,15 @@ Curated, high-trust sources for building and understanding a FalkorDB-backed mul
 - [Guide: Software Engineering Guide — Debugging and troubleshooting](https://software-engineering-guide.github.io/software-engineering-guide/chapters/02-15-debugging-and-troubleshooting/)
   Reproduce-first, binary-search isolation, failing test before the fix, git bisect. Use for: E6.
 
+## Knowledge — Toolchain & runtime
+
+- [Docs: Modules: TypeScript (Node.js)](https://nodejs.org/api/typescript.html)
+  Use for: how Node runs `.ts` — type stripping vs full compile, the version timeline (v22.6.0 added, v22.18.0/v23.6.0 default, v24.12.0/v25.2.0 stable), and "no type checking is performed". Lesson 0206.
+- [npm: tsx](https://www.npmjs.com/package/tsx)
+  Use for: running `.ts` directly on Node 18 (`npm i tsx`, `npx tsx file.ts`). Lesson 0206, Option A.
+- [Docs: tsc CLI Options (TypeScript)](https://www.typescriptlang.org/docs/handbook/compiler-options.html)
+  Use for: compiling `.ts` to `.js` and type-checking (`tsc`, `--outDir`, `--project`). Lesson 0206, Option C.
+
 ## Wisdom (Communities)
 
 - [FalkorDB Discord](https://discord.com/invite/Y2mMT9VdMy)
