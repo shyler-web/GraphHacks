@@ -69,7 +69,7 @@ degrades; neither is imported until called, so FalkorDB remains the only hard de
 |---|---|---|
 | `NEBIUS_API_KEY` | — | Nebius provider token (required for LLM features) |
 | `NEBIUS_BASE_URL` | `https://api.tokenfactory.nebius.com/v1` | override |
-| `NEBIUS_MODEL` | `meta-llama/Llama-3.3-70B-Instruct` | any NVIDIA/NIM id |
+| `NEBIUS_MODEL` | `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` | any NVIDIA/NIM id |
 | `TAVILY_API_KEY` | — | web-search grounding |
 | `REPO_ROOT` / `GRAPH_JSON_PATH` | git root / `<root>/graphify-out/graph.json` | per-repo source (existing) |
 

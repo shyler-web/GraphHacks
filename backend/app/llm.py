@@ -8,8 +8,8 @@ Environment (all read via ``os.environ``, never committed):
 
 * ``NEBIUS_API_KEY``  — required (the provider token).
 * ``NEBIUS_BASE_URL`` — default ``https://api.tokenfactory.nebius.com/v1``.
-* ``NEBIUS_MODEL``    — default ``meta-llama/Llama-3.3-70B-Instruct``; set to any
-  NVIDIA/NIM model id you have access to (e.g. ``nvidia/llama-3.3-70b-instruct``).
+* ``NEBIUS_MODEL``    — default ``nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`` (a fast
+  NVIDIA model with native JSON mode); set to any NVIDIA/NIM model id you have.
 
 A missing key raises :class:`LLMUnavailable`, which the HTTP layer maps to a 503
 so the cockpit falls back to its deterministic synthesizer instead of crashing.
@@ -25,7 +25,7 @@ import urllib.request
 NEBIUS_BASE_URL = os.environ.get(
     "NEBIUS_BASE_URL", "https://api.tokenfactory.nebius.com/v1"
 ).rstrip("/")
-DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
+DEFAULT_MODEL = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
 TIMEOUT = 90
 
 
