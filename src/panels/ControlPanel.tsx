@@ -4,7 +4,7 @@ import { PERSONA_LEVELS } from '../graph/personaLevels';
 import { getFirstNodeId } from '../data';
 
 export default function ControlPanel(props: any) {
-  const { visibleNodes, currentTenant, maturityLevel, setMaturityLevel, promptInput, setPromptInput, useLiveGemini, setUseLiveGemini, isRunningAgents, agentStepText, handleRunMultiAgentPrompt, tenants, activeTenantKey, setActiveTenantKey, setSelectedNodeId, repos, activeRepoId, setActiveRepoId, repoLoading, repoError, onLoadRepo } = props;
+  const { visibleNodes, currentTenant, maturityLevel, setMaturityLevel, promptInput, setPromptInput, useLiveGemini, setUseLiveGemini, isRunningAgents, agentStepText, handleRunMultiAgentPrompt, tenants, activeTenantKey, setActiveTenantKey, setSelectedNodeId, repos, activeRepoId, setActiveRepoId, repoLoading, repoError, repoNote, onLoadRepo } = props;
   const [repoUrl, setRepoUrl] = useState('');
 
   return (
@@ -38,16 +38,16 @@ export default function ControlPanel(props: any) {
           onChange={(e) => setActiveRepoId(e.target.value)}
           className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white focus:outline-none cursor-pointer"
         >
-          {repos.map((r) => (
-            <option key={r.id} value={r.id} className="bg-slate-900 text-white">
-              {r.name} ({r.id})
-            </option>
-          ))}
-          {repos.length === 0 && (
-            <option value={activeRepoId} className="bg-slate-900 text-white">
-              {activeRepoId}
-            </option>
-          )}
+          <option value="graphhacks" className="bg-slate-900 text-white">
+            graphhacks (bundled demo)
+          </option>
+          {repos
+            .filter((r) => r.id !== 'graphhacks')
+            .map((r) => (
+              <option key={r.id} value={r.id} className="bg-slate-900 text-white">
+                {r.name} ({r.id})
+              </option>
+            ))}
         </select>
         <form
           onSubmit={(e) => {
@@ -80,6 +80,11 @@ export default function ControlPanel(props: any) {
         {repoError && (
           <span className="text-[11px] text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2 py-1">
             {repoError}
+          </span>
+        )}
+        {repoNote && (
+          <span className="text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2 py-1">
+            {repoNote}
           </span>
         )}
       </div>

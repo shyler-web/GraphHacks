@@ -66,6 +66,7 @@ export default function App() {
   const [repos, setRepos] = useState<RepoSummary[]>([]);
   const [repoLoading, setRepoLoading] = useState(false);
   const [repoError, setRepoError] = useState<string | null>(null);
+  const [repoNote, setRepoNote] = useState<string | null>(null);
 
   const svgRef = React.useRef(null);
   const [draggingNodeId, setDraggingNodeId] = useState(null);
@@ -117,9 +118,15 @@ export default function App() {
   const handleLoadRepo = useCallback(async (url: string) => {
     setRepoLoading(true);
     setRepoError(null);
+    setRepoNote(null);
     try {
       const result = await loadRepo(url);
       setActiveRepoId(result.repo_id);
+      setRepoNote(
+        `Loaded ${result.name}: ${result.files} files · ${result.symbols} symbols · ` +
+          `${result.commits} commits · ${result.owners} owner(s) → now in Track 01/03`
+      );
+      setActiveTab('track01');
       const list = await fetchRepos();
       setRepos(list);
     } catch (err) {
@@ -438,6 +445,7 @@ export default function App() {
         setActiveRepoId={setActiveRepoId}
         repoLoading={repoLoading}
         repoError={repoError}
+        repoNote={repoNote}
         onLoadRepo={handleLoadRepo}
       />
 

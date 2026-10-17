@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BookOpen, Building2, GitPullRequestArrow, RefreshCw, Users } from 'lucide-react';
 import {
+  fetchTrack01Hotspots,
   fetchTrack03Drift,
   fetchTrack03Trace,
   fetchTrack03WhoOwns,
@@ -10,9 +11,10 @@ import {
   type Track03Trace
 } from '../data/remote';
 
-// Preset path the panel answers from the real `company:brain` graph. A single
-// text input (below) overrides this for both who-owns and trace.
-const DEFAULT_TARGET = 'docs/decisions.md';
+// Universal fallback (every repo has one); the repo-change effect below replaces
+// this with the active repo's top-hotspot file so who-owns/trace answer for a
+// file that actually exists in the loaded repo.
+const DEFAULT_TARGET = 'README.md';
 
 function formatEpoch(seconds: number | null | undefined): string {
   if (!seconds) return '—';
@@ -57,9 +59,41 @@ export default function Track03Brain(props: any) {
   }, [repo, target]);
 
   useEffect(() => {
-    void load();
-    // Run once on mount and when the active repo changes; a target edit is
-    // applied explicitly via the "Run" button (not on every keystroke).
+    // On repo change, default the target to that repo's top-hotspot file (a file
+    // that actually exists in it), then load. A manual target edit still applies
+    // via the "Run" button / Enter key (not on every keystroke).
+    let cancelled = false;
+    (async () => {
+      let nextTarget = DEFAULT_TARGET;
+      try {
+        const hotspots = await fetchTrack01Hotspots(1, repo);
+        if (hotspots[0]?.file) nextTarget = hotspots[0].file;
+      } catch {
+        /* keep the universal default */
+      }
+      if (cancelled) return;
+      setTarget(nextTarget);
+      setLoading(true);
+      setError(null);
+      try {
+        const [nextOwners, nextTrace, nextDrift] = await Promise.all([
+          fetchTrack03WhoOwns(nextTarget, 5, repo),
+          fetchTrack03Trace(nextTarget),
+          fetchTrack03Drift(repo)
+        ]);
+        if (cancelled) return;
+        setOwners(nextOwners);
+        setTrace(nextTrace);
+        setDrift(nextDrift);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message || String(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repo]);
 
@@ -116,7 +150,7 @@ export default function Track03Brain(props: any) {
             onKeyDown={(e) => {
               if (e.key === 'Enter') void load();
             }}
-            placeholder="file path or symbol, e.g. docs/decisions.md"
+            placeholder="file path or symbol, e.g. src/filters.py"
             className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
           />
           <button

@@ -80,13 +80,13 @@ def _cache_dir() -> Path:
 
 
 def _clone_repo(url: str, slug: str) -> Path:
-    """Shallow-clone ``url`` into ``<cache>/<slug>``; 409 on any failure."""
+    """Clone ``url`` (full history, so Track 03 ownership is real) into ``<cache>/<slug>``; 409 on failure."""
     target = _cache_dir() / slug
     try:
         if target.exists():
             shutil.rmtree(target, ignore_errors=True)
         proc = subprocess.run(
-            ["git", "clone", "--depth", "1", url, str(target)],
+            ["git", "clone", url, str(target)],
             capture_output=True,
             text=True,
             encoding="utf-8",

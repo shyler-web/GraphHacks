@@ -166,6 +166,8 @@ class ActionEngine:
         graph_key = db.repo_graph_key(repo_id)
         cypher = (
             "CALL algo.pageRank('Symbol','CALLS') YIELD node, score "
+            "WITH node, score "
+            "WHERE node.source_file IS NOT NULL AND node.source_file <> '' "
             "RETURN node.id AS id, node.label AS label, node.source_file AS file, "
             f"score ORDER BY score DESC LIMIT {top}"
         )
@@ -276,6 +278,7 @@ class ActionEngine:
         graph_key = db.repo_graph_key(repo_id)
         cypher = """
             MATCH (s:Symbol)
+            WHERE s.source_file IS NOT NULL AND s.source_file <> ''
             OPTIONAL MATCH (caller:Symbol)-[:CALLS]->(s)
             OPTIONAL MATCH (s)-[:CALLS]->(callee:Symbol)
             WITH s, count(DISTINCT caller) AS callers, count(DISTINCT callee) AS callees
