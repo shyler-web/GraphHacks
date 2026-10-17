@@ -29,9 +29,14 @@ npm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 
-# graphify cache (regenerated; keep graph.json + reports)
-graphify-out/cache/
-graphify-out/.graphify_*
+# graphify outputs — keep ONLY the load-bearing graph.json (Track 01/03 + Docker).
+# Everything else (html viz, reports, manifests, snapshots, cache) is regenerable.
+graphify-out/*
+!graphify-out/graph.json
+
+# personal teaching/reference material — local only, not part of the submission
+lessons/
+assets/diagrams/
 
 # local db / containers
 *.rdb
