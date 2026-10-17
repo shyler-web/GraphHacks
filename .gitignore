@@ -45,3 +45,6 @@ assets/diagrams/
 
 # SDD workspace (git-ignored scratch)
 .superpowers/
+
+# archify working scratch
+.archify/

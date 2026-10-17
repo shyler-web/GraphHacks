@@ -22,6 +22,30 @@ The hackathon entries share one engine; each track is a distinct **projection** 
 
 ## 2 · Architecture
 
+Interactive architecture diagrams (C4 levels, generated with **Archify** — click to open, they're explorable + animated):
+
+- **[System context](./docs/architecture/nexus-context.html)** — who uses it, and the external systems it talks to
+- **[Containers](./docs/architecture/nexus-container.html)** — cockpit · FastAPI · FalkorDB · graphify · MCP · Gemini · LangSmith
+- **[Backend components](./docs/architecture/nexus-component.html)** — the three engines, the `db.named_graph` router, and the named graphs
+
+```mermaid
+flowchart LR
+  U["Developer / Judge"] -->|"UI · HTTP :5173"| C["React Cockpit"]
+  C -->|"HTTP /api"| B["FastAPI :8000"]
+  B -->|"Cypher"| F[("FalkorDB :6379")]
+  G["graphify CLI"] -.->|"graph.json"| B
+  M["FalkorDB MCP"] -.->|"GRAPH.QUERY"| F
+  B -.->|"prompts"| LLM["Gemini"]
+  B -.->|"traces"| LS["LangSmith"]
+  subgraph local["Local · docker compose"]
+    C
+    B
+    F
+  end
+```
+
+Text overview:
+
 ```
                  React + Vite + TS cockpit  (src/, D9)
    App.tsx · GraphCanvas · MemoryTiers · HandoffLedger · ControlPanel ·
@@ -231,7 +255,7 @@ The seeded ledger shows the escalation end-to-end: `VibeArchitect (L0-L1) → Fu
 
 ## 11 · Decisions & further reading
 
-- `docs/decisions.md` — decision records D1–D10 (language, orchestration, observability, deployment, memory model, contract, execution, Python port, frontend modules, named-graph topology).
+- `docs/decisions.md` — decision records D1–D11 (language, orchestration, observability, deployment, memory model, contract, execution, Python port, frontend modules, named-graph topology, cockpit projection + registry).
 - `docs/contracts/memory-service.md` — the language-agnostic `MemoryService` contract + ambiguity resolutions A1–A10.
 - `reference/graph-schema.html` — the canonical four-tier model; `reference/features.html` — the Track 02 feature set and rule-10 artifacts.
 - `docs/superpowers/specs/2026-10-17-nexus-three-tracks-design.md` and the matching plan — the three-track design and implementation plan.
