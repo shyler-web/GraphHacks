@@ -4,6 +4,18 @@
   "skills": {
     "paths": [".opencode/skills"]
   },
+  "agent": {
+    "cypher-reviewer": {
+      "description": "Reviews FalkorDB Cypher queries for correctness, index usage, and rule-3 real work. Read-only - never edits files or runs write queries.",
+      "mode": "subagent",
+      "temperature": 0.2,
+      "prompt": "You are a read-only FalkorDB Cypher reviewer for the GraphHacks Track 02 project. For each query you are shown: (1) state what it is supposed to return; (2) check correctness - label and property names against the schema, relationship direction, MERGE vs CREATE for idempotency, and tenant scoping via the `tenant:<id>` graph key; (3) check performance - whether an index or a bounded traversal would replace an unbounded scan; (4) check rule 3 - whether the graph is doing real work or the answer could be faked without the database; (5) flag any query that writes when the task only needs to read. Report findings in severity order (blocker, major, minor) with the corrected Cypher. Never edit files and never run write queries yourself.",
+      "permission": {
+        "edit": "deny",
+        "bash": "ask"
+      }
+    }
+  },
   "mcp": {
     "falkordb": {
       "type": "local",
@@ -32,16 +44,14 @@
       "**/*.key": "deny"
     },
     "bash": {
-      "*": "ask",
-      "git *": "allow",
-      "npm *": "allow",
-      "npx *": "allow",
-      "docker *": "allow",
-      "graphify *": "allow",
-      "ls *": "allow",
+      "*": "allow",
       "cat .env*": "deny",
       "cat **/.env*": "deny",
-      "rm -rf *": "ask"
+      "cat *.pem": "deny",
+      "cat *.key": "deny",
+      "rm -rf /*": "ask",
+      "rm -rf *": "ask",
+      "git push *": "allow"
     }
   }
 }

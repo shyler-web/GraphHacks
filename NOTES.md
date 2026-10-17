@@ -20,4 +20,5 @@
 
 ## Reference pages
 - `reference/insight.html` — master insight page: snapshot findings, graph findings, lesson→project map, dependency-ordered to-do (T0.1–T4.5), rule compliance matrix. Regenerate/refresh when the snapshot changes.
+- `reference/archify-guide.html` — Archify skill (diagrams as code): pipeline + package figures embedded from `assets/diagrams/` (reusable diagram assets; regenerate with the Archify CLI).
 - `lessons/0111-capstone-the-engineers-prompt.html` — capstone summary of the 010* series.

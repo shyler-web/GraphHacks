@@ -6,8 +6,8 @@ Hackathon project for the WeMakeDevs × FalkorDB **Graph Hacks** event (Oct 15�
 
 1. **Rules that bind us:** FalkorDB is the primary graph DB and must be load-bearing (rule 3). Track 02. Deadline Oct 18, 11:59 PM IST.
 2. **Goal + exit criterion:** a deployed/local Track 02 demo where stopping FalkorDB visibly breaks the app. That flip is the submission.
-3. **Locked decisions** (full records in `docs/decisions.md`): Node/TS backend · hand-rolled orchestration (no framework) · LangSmith tracing · local Docker Compose first. Do not silently change these.
-4. **Health check:** `npm run health` (once built) prints `MATCH (n) RETURN count(n)` against FalkorDB. Run it after every change that touches data.
+3. **Locked decisions** (full records in `docs/decisions.md`): **Python backend (D8, supersedes D1)** · React+Vite+TS frontend, modularized (D9) · hand-rolled orchestration (no framework) · LangSmith tracing · local Docker Compose first. Do not silently change these.
+4. **Health check:** prints `MATCH (n) RETURN count(n)` against FalkorDB. Run it after every change that touches data. (Node: `npm run health`; a Python equivalent lands with the D8 port.)
 
 ## Context graph — use graphify FIRST
 
@@ -27,8 +27,8 @@ Rail-map: `graphify-out/GRAPH_REPORT.md`. Interactive view: `graphify-out/graph.
 | Layer | Choice | Notes |
 |---|---|---|
 | Memory | **FalkorDB** (Docker) | one named graph per tenant |
-| Backend + agents | **Node.js + TypeScript** (Fastify/Express) | official `falkordb` npm client |
-| Frontend | **React + Vite + TS** | the existing cockpit |
+| Backend + agents | **Python** (FastAPI) | official `falkordb` Python client (D8) |
+| Frontend | **React + Vite + TS** | the existing cockpit, modularized (D9) |
 | LLM | **Gemini** | extraction + reasoning |
 | Tools | **Tavily** | web-search tool the agent calls; available as MCP |
 | Tool protocol | **MCP** | FalkorDB graph tools + Tavily |
@@ -56,7 +56,7 @@ See `reference/tool-integration.html` for the full wiring, and lesson `0202` for
 
 ## Subagents & skills
 
-Use the project subagents for focused work (see `.opencode/agent/`): `researcher`, `teacher`, `planner`, `builder`, `reviewer`, `debugger`, `gitter`, `graphify-keeper`. Skills in `.opencode/skills/`: `prompt-playbook`, `verify-change`, `track02-build`.
+Use the project subagents for focused work (see `.opencode/agent/`): `researcher`, `teacher`, `planner`, `builder`, `reviewer`, `debugger`, `gitter`, `graphify-keeper`, plus the port agents `frontend-architect` and `python-backend`. Skills in `.opencode/skills/`: `prompt-playbook`, `verify-change`, `track02-build`.
 
 ## Git workflow — commit and push continuously
 

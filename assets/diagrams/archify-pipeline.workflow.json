@@ -1,0 +1,45 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "How Archify turns a request into a checked diagram",
+    "subtitle": "Describe → typed JSON → one finalize command → a standalone, validated HTML artifact",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "output": "assets/diagrams/archify-pipeline.html"
+  },
+  "lanes": [
+    { "id": "you", "label": "You" },
+    { "id": "agent", "label": "Agent authoring" },
+    { "id": "cli", "label": "Archify CLI" },
+    { "id": "gates", "label": "Validation gates" }
+  ],
+  "phases": [
+    { "id": "intake", "label": "Intake", "fromCol": 0, "toCol": 0 },
+    { "id": "author", "label": "Author", "fromCol": 1, "toCol": 2, "variant": "emphasis" },
+    { "id": "prove", "label": "Prove + deliver", "fromCol": 3, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["ask", "route", "cand", "finalize", "gates", "artifact"],
+  "nodes": [
+    { "id": "ask", "lane": "you", "col": 0, "type": "external", "label": "Ask in chat", "sublabel": "idea, system, or repo" },
+    { "id": "review", "lane": "you", "col": 5, "type": "frontend", "label": "Open the HTML", "sublabel": "explore + export" },
+    { "id": "route", "lane": "agent", "col": 1, "type": "backend", "label": "Type router", "sublabel": "1 of 10 modes" },
+    { "id": "cand", "lane": "agent", "col": 2, "type": "backend", "label": "Candidate JSON", "sublabel": "typed + schema-checked", "tag": "source of truth" },
+    { "id": "finalize", "lane": "cli", "col": 3, "type": "messagebus", "label": "finalize", "sublabel": "one command" },
+    { "id": "gates", "lane": "gates", "col": 4, "type": "security", "label": "Four gates", "sublabel": "validate · deliver · check · browser" },
+    { "id": "artifact", "lane": "cli", "col": 5, "type": "cloud", "label": "Standalone HTML", "sublabel": "inline SVG, zero deps" }
+  ],
+  "edges": [
+    { "id": "ask-route", "from": "ask", "to": "route", "label": "prompt", "variant": "emphasis" },
+    { "id": "route-cand", "from": "route", "to": "cand", "label": "recipe", "variant": "default" },
+    { "id": "cand-finalize", "from": "cand", "to": "finalize", "label": "candidate.json", "variant": "emphasis" },
+    { "id": "finalize-gates", "from": "finalize", "to": "gates", "variant": "security" },
+    { "id": "gates-artifact", "from": "gates", "to": "artifact", "variant": "default" },
+    { "id": "artifact-review", "from": "artifact", "to": "review", "variant": "default", "role": "return" },
+    { "id": "gates-repair", "from": "gates", "to": "cand", "label": "repair, then rerun", "variant": "dashed", "role": "branch" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Ten modes, one source of truth", "items": ["architecture, workflow, sequence, dataflow, lifecycle", "erd, class, tree, timeline, waterfall"] },
+    { "dot": "rose", "title": "What a passing receipt proves", "items": ["Schema and geometry validated", "Rendered and checked in a real browser"] }
+  ]
+}

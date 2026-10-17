@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "Anatomy of the Archify skill",
+    "subtitle": "One folder, zero runtime dependencies: a workflow, ten renderers, typed schemas, and worked examples.",
+    "output": "assets/diagrams/archify-package.html",
+    "quality_profile": "showcase"
+  },
+  "layout": { "direction": "right" },
+  "nodes": [
+    { "id": "skill", "label": "archify/", "sublabel": "the installed skill" },
+    { "id": "skillmd", "label": "SKILL.md", "parent": "skill", "sublabel": "workflow + type router" },
+    { "id": "bin", "label": "bin/", "parent": "skill", "sublabel": "CLI commands" },
+    { "id": "renderers", "label": "renderers/", "parent": "skill", "sublabel": "one per diagram type" },
+    { "id": "schemas", "label": "schemas/", "parent": "skill", "sublabel": "typed JSON contracts" },
+    { "id": "references", "label": "references/", "parent": "skill", "sublabel": "authoring rules" },
+    { "id": "examples", "label": "examples/", "parent": "skill", "sublabel": "worked showcases" },
+    { "id": "archify_mjs", "label": "archify.mjs", "parent": "bin", "sublabel": "main entry" },
+    { "id": "finalize_mjs", "label": "finalize.mjs", "parent": "bin", "sublabel": "render + four gates" },
+    { "id": "preview_mjs", "label": "preview.mjs", "parent": "bin", "sublabel": "live preview" },
+    { "id": "r_arch", "label": "architecture/", "parent": "renderers" },
+    { "id": "r_wf", "label": "workflow/", "parent": "renderers" },
+    { "id": "r_seq", "label": "sequence/", "parent": "renderers" },
+    { "id": "r_tree", "label": "tree/", "parent": "renderers", "sublabel": "this diagram" },
+    { "id": "r_more", "label": "+ 6 more", "parent": "renderers", "sublabel": "dataflow · lifecycle · erd · class · timeline · waterfall", "collapsed": true },
+    { "id": "s_wf", "label": "workflow.schema.json", "parent": "schemas" },
+    { "id": "s_tree", "label": "tree.schema.json", "parent": "schemas" },
+    { "id": "s_common", "label": "common.schema.json", "parent": "schemas", "sublabel": "shared definitions" },
+    { "id": "ref_defaults", "label": "authoring-defaults.md", "parent": "references" },
+    { "id": "ref_contract", "label": "authoring-contract.md", "parent": "references", "sublabel": "geometry rules" },
+    { "id": "ref_delivery", "label": "delivery-contract.md", "parent": "references", "sublabel": "gates + repair" },
+    { "id": "ex_wf", "label": "agent-tool-call.workflow.json", "parent": "examples" },
+    { "id": "ex_tree", "label": "archify-repository.tree.json", "parent": "examples" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "No build step", "items": ["Node >=18, no runtime dependencies", "Each renderer runs standalone"] }
+  ]
+}

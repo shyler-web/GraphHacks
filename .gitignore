@@ -1,6 +1,11 @@
 # dependencies
 node_modules/
 
+# python backend (uv) — never commit the venv; keep uv.lock
+backend/.venv/
+__pycache__/
+*.pyc
+
 # build output
 dist/
 dist-ssr/
@@ -30,4 +35,8 @@ graphify-out/.graphify_*
 
 # local db / containers
 *.rdb
-data/
+/data/
+!src/data/
+
+# SDD workspace (git-ignored scratch)
+.superpowers/

@@ -8,8 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "health": "node scripts/health.mjs",
-    "typecheck": "tsc --noEmit",
-    "verify:t2.2": "tsx scripts/verify-t2.2.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "falkordb": "^6.8.0",

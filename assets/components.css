@@ -181,3 +181,31 @@
 .finding.med  { border-left-color: #c8922a; }
 .finding.lo   { border-left-color: var(--ok); }
 .finding p:last-child { margin-bottom: 0; }
+
+/* ---- Diagram figure: embeds an Archify-generated standalone HTML artifact ---- */
+.diagram {
+  margin: 1.6rem 0;
+  font-family: var(--sans);
+}
+.diagram figcaption {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+}
+.diagram figcaption b { color: var(--ink); }
+.diagram iframe {
+  display: block;
+  width: 100%;
+  height: 30rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: #fff;
+}
+.diagram .open-full {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+}
+@media print {
+  .diagram iframe { height: 24rem; }
+}

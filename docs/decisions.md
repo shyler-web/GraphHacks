@@ -59,3 +59,29 @@ One record per expensive-to-reverse decision. Format per lesson 0108: **Decision
 - **Alternatives:** `.mjs` + JSDoc types (no new dependency, weaker/less idiomatic typing); `tsc` compile → run `.js` (enforces types, but adds a build step to every run); upgrade Node to 22+ (built-in type stripping, but environment churn mid-hackathon).
 - **Reversibility:** Easy. The runner and the typecheck command are thin wrappers; the code stays `.ts`.
 - **Revisit if:** we upgrade to Node 22+ (built-in type stripping removes the need for `tsx`), or we need a production bundle/build for the backend.
+
+## D8 · Backend + agents language: Python (supersedes D1)
+
+- **Decision:** The backend, memory service, and agent orchestration are written in **Python** (FastAPI for HTTP, `falkordb` Python client for the graph, `uv` for dependency/venv management). The prior Node/TS implementation (`server/`, its verification scripts) is preserved under **`dump/node-backend/`** for future revert. The `MemoryService` contract (D6) and schema (D5) are unchanged; only the implementation language changes. The frontend stays React + Vite + TS and talks to the Python backend over HTTP/JSON.
+- **Why:** The participant judges Python gives materially more clarity for the agent-memory/orchestration code and prefers it deliberately, accepting the rewrite cost. The contract was designed language-agnostic (D6) precisely so this port is possible; FalkorDB ships a first-class Python client. This is a conscious, recorded reversal of D1, not a silent change.
+- **Alternatives:** stay on Node/TS (D1 — no port cost, but lower clarity for the participant); hybrid (Node for HTTP, Python for agents — two runtimes, worst of both).
+- **Reversibility:** Expensive but bounded — the Node implementation is retained in `dump/`, and the contract is unchanged, so the tier-by-tier exit criteria (T2.2–T2.4) re-run identically against the Python implementation.
+- **Revisit if:** the Python port cannot reach parity on a tier's exit criterion before the deadline, in which case restore `dump/node-backend/` and continue on Node.
+- **⚠ Risk accepted:** this lands with < 36h to the deadline. The critical path (rule-3 wiring, T4.1/T4.2) must not be starved by the port; the port is done tier-by-tier with parity checks, never a big-bang swap.
+
+## D9 · Frontend structure: modular cockpit under `src/`
+
+- **Decision:** Decompose the single ~1,985-line `src/graphsync_multi_agent_falkordb_memory_cockpit.tsx` into a small module tree (data layer, graph view, panels, orchestration view, shared types/helpers), with a single **data-access seam** so the cockpit can read from the Python backend route instead of the hard-coded `INITIAL_TENANTS`. Behavior and visuals are unchanged during the split; the refactor keeps `npm run build` green at every step.
+- **Why:** A monolith cannot be wired to a real backend cleanly, and the user wants modules that are easy to connect and replace. Isolating the data seam is the prerequisite for T4.2 (cockpit reads real route) and the rule-3 flip.
+- **Alternatives:** leave the monolith and wire it in place (fastest to start, hardest to reason about and revert); rewrite the UI from scratch (throws away a working asset).
+- **Reversibility:** Easy — pure refactor, fully reversible via git; no behavior change until the data seam is switched to the backend.
+- **Revisit if:** the split destabilizes the build near the deadline, in which case freeze the module tree and wire the data seam in the smallest touching file.
+
+## D10 · Named-graph topology: tenant / code / company graphs
+
+- **Decision:** Extend the named-graph model (D5) beyond `tenant:<id>` with two additional projections on the same FalkorDB instance: **`code:<repoId>`** (Track 01 — the `graphify-out/graph.json` AST graph loaded as `(:File)`/`(:Symbol)` with `[:CALLS]`/`[:IMPORTS]`/`[:CONTAINS]`/`[:INHERITS]`) and **`company:brain`** (Track 03 — `(:Person)`/`(:Commit)`/`(:Doc)`/`(:File)`/`(:Symbol)`). All named-graph access goes through one router, `db.named_graph(graph_key)`; `tenant:<id>` is unchanged and remains the Track 02 isolation boundary. Track 01/03 read only their own graphs; no cross-graph reads.
+- **Why:** Entering Tracks 01 and 03 from one repo requires more than per-tenant memory. Reusing the same instance + one router keeps the "graph does real work" story (rule 3) intact across all three tracks and avoids a second database or service. `code:`/`company:` are read-mostly projections rebuilt by an idempotent sync, so they do not threaten D5's tenant isolation.
+- **Alternatives:** one giant graph with label prefixes (mixes tenant isolation into query filters — violates D5's "structural, not a `WHERE`"); a second FalkorDB instance per track (more moving parts, breaks the one-command demo, D4); local NetworkX only for Tracks 01/03 (fails rule 3 — the graph would not be load-bearing).
+- **Reversibility:** Cheap-ish. The router is one function (`db.named_graph`); dropping a projection is a config change, and the sync scripts are idempotent. Tenant graphs are untouched.
+- **Revisit if:** a projection cannot be expressed through the existing `MemoryService`/engine boundaries, the local demo's single-instance budget is exceeded, or rule 3 cannot be shown for a projection (in which case that track's entry is dropped, not faked).
+- **Scope note (Track 03):** no GitHub token → built on local `git log` commits + on-disk docs + the AST graph only; PRs/issues are explicitly deferred.
