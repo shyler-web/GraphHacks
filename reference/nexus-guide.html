@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GraphHacks Nexus — Built, Explained, Walked Through</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<link rel="stylesheet" href="../assets/components.css">
+</head>
+<body>
+<p class="lesson-meta">GraphHacks Nexus · One repo · Three tracks · Three named graphs</p>
+<h1>GraphHacks Nexus — Built, Explained, Walked Through</h1>
+<p class="lede">Everything that was built, in one page you can present cold: what the three tracks are, the exact commands that prove each one, the rule-3 flip that <em>is</em> the submission, the decisions behind it, and the persona ladder from vibe coder to principal architect — all grounded in the real scripts, not in memory.</p>
+
+<p class="win">By the end you can <em>walk a judge through the whole system — and explain your own progression</em>, evidenced by <em>running every <code>verify_*</code> command and the stop-FalkorDB flip live, and narrating each decision (D5–D10) from memory</em>. That is rule 12, rehearsed.</p>
+
+<nav class="nav">
+  <a href="CURRICULUM.html">← Curriculum</a>
+  <a href="insight.html">Insight page</a>
+  <a href="graph-schema.html">Data model</a>
+  <a href="cypher-cheatsheet.html">Cypher cheat sheet</a>
+  <a href="track02-checklist.html">Track 02 check-off</a>
+  <a href="features.html">Feature set</a>
+  <a href="../lessons/0205-extend-to-tracks-1-and-3.html">0205 · extend to Tracks 1 &amp; 3</a>
+</nav>
+
+<div class="callout">
+  <strong>How this page was grounded.</strong> Not from memory. Every command and expected line below was read from the real scripts (<code>backend/scripts/verify_*.py</code>, <code>backend/app/*.py</code>) and re-run live against the running FalkorDB on 2026-10-17; the rule-3 flip was reproduced (<code>200 → 503 → 200</code>). Design decisions and the task plan come from <code>docs/decisions.md</code> and <code>docs/superpowers/{specs,plans}/2026-10-17-nexus-three-tracks*.md</code>. Terms are used exactly as in <a href="../GLOSSARY.md">GLOSSARY.md</a>.
+</div>
+
+<h2>1 · What was built — one repo, three tracks, three named graphs</h2>
+<p>A single submission repo, <strong>GraphHacks</strong>, is entered in all three tracks. The trick is that the three tracks are not three apps: they are three <strong>projections</strong> over one FalkorDB instance, behind one FastAPI backend and one React cockpit. Read the diagram top to bottom; the <em>only</em> thing that changes between tracks is the named graph the engine opens.</p>
+
+<pre><code>                      React cockpit  ·  src/            (D9, modular)
+   App.tsx + panels/{GraphCanvas, MemoryTiers, HandoffLedger,
+                     Track01Studio, Track03Brain, DataStates}
+                      │  HTTP/JSON   (Vite/nginx proxy  /api → :8000)
+                      ▼
+           FastAPI  backend/app/main.py
+           GET /api/health · /api/tenants · /api/graph/{nodes,edges}
+                      │
+   ┌──────────────────┼──────────────────────────────────┐
+   │ Track 01          │ Track 02                           │ Track 03
+   │ falkor_action.py  │ memory_service.py                  │ falkor_brain.py
+   │ blast_radius ·    │ episodic · semantic · procedural · │ who_owns ·
+   │ hotspots ·        │ handoff · isolation ·             │ trace_why ·
+   │ shortest_dep_path │ concurrency                       │ detect_drift
+   └──────────────────┴──────────────────────────────────┘
+                      │   db.named_graph(...)  — ONE router (D10)
+                      ▼
+   FalkorDB named graphs:   tenant:&lt;id&gt;  ·  code:&lt;repoId&gt;  ·  company:brain
+                      ▲                    ▲                    ▲
+        seed_cockpit.py│         graph_sync.py│          git log + docs/ +
+        (src/data/│               (graphify-out/│          graphify-out/graph.json
+         tenants.ts)               graph.json)</code></pre>
+
+<table>
+  <tr><th>Track</th><th>Named graph</th><th>Engine module</th><th>Proof command (from <code>backend/</code>)</th><th>Status</th></tr>
+  <tr><td><strong>02 · Agent Memory &amp; Coordination</strong> (anchor)</td><td><code>tenant:&lt;id&gt;</code></td><td><code>memory_service.py</code> + <code>cockpit.py</code></td><td><code>uv run python scripts/verify_t2_2.py</code></td><td><span class="status done">verified</span></td></tr>
+  <tr><td><strong>01 · Agents That Act on Connected Data</strong></td><td><code>code:graphhacks</code></td><td><code>graph_sync.py</code> + <code>falkor_action.py</code></td><td><code>uv run python scripts/verify_track1.py</code></td><td><span class="status done">verified</span></td></tr>
+  <tr><td><strong>03 · Company Brain</strong></td><td><code>company:brain</code></td><td><code>falkor_brain.py</code></td><td><code>uv run python scripts/verify_track3.py</code></td><td><span class="status done">verified</span></td></tr>
+  <tr><td>Tenant registry (read-only)</td><td><code>graphhacks_registry</code></td><td><code>cockpit.list_tenants()</code></td><td><code>curl localhost:8000/api/tenants</code></td><td><span class="status done">verified</span></td></tr>
+  <tr><td>Health (T1.3)</td><td><code>graphhacks_health</code></td><td><code>health.py</code> / <code>db.count_nodes()</code></td><td><code>uv run python health.py</code></td><td><span class="status done">verified</span></td></tr>
+</table>
+
+<div class="habit">
+One substrate, three projections. Track 02 is the memory system the mission targets; Tracks 01 and 03 are real but thin re-uses of the same graph — the design locks that scoping so the rule-3 flip is never starved. When you narrate this: <em>“same database, same router, three named-graph projections — no second service, no second UI.”</em>
+</div>
+
+<div class="finding lo">
+  <p><strong>Real numbers on the live graph (2026-10-17).</strong> Track 01: <code>files=107 symbols=521 tests=17 nodes=628</code>, edges <code>CALLS=51 IMPORTS=188 CONTAINS=360 INHERITS=28</code>. Track 03: <code>people=1 commits=19 files=169 symbols=292 docs=49 cited=100%</code>. Track 02 seed: two tenants (<code>nodes=7 edges=8</code> and <code>nodes=2 edges=1</code>) in <code>graphhacks_registry</code>. These are outputs, not estimates — see §3.</p>
+</div>
+
+<h2>2 · Run it</h2>
+<p>Three ways up, from smallest to whole-demo. The dev path is the one you debug on; compose is the one-command fallback (D4).</p>
+
+<table>
+  <tr><th>What</th><th>Command</th><th>Reaches</th></tr>
+  <tr><td>Graph</td><td><code>docker run -d --name falkordb -p 6379:6379 -p 3000:3000 falkordb/falkordb:latest</code></td><td>Redis protocol <code>:6379</code>, Browser UI <code>:3000</code></td></tr>
+  <tr><td>Backend</td><td><code>cd backend &amp;&amp; uv run uvicorn app.main:app --port 8000</code></td><td>FastAPI on <code>:8000</code></td></tr>
+  <tr><td>Cockpit</td><td><code>npm run dev</code></td><td>Vite on <code>:5173</code>, proxies <code>/api</code> → <code>:8000</code></td></tr>
+  <tr><td>Whole demo</td><td><code>docker compose up --build</code></td><td>FalkorDB + backend + nginx cockpit on <code>:5173</code></td></tr>
+</table>
+
+<p><strong>Endpoints to curl</strong> (backend up, FalkorDB up):</p>
+<table>
+  <tr><th>Endpoint</th><th>Expected body</th><th>Code</th></tr>
+  <tr><td><code>/api/health</code></td><td><code>{"status":"ok","graph":"graphhacks_health","node_count":1}</code></td><td>200</td></tr>
+  <tr><td><code>/api/tenants</code></td><td><code>{"tenants":[{"key":"graphsync_user1_ai_avatar_saas",…},{"key":"graphsync_user2_fintech_ledger",…}]}</code></td><td>200</td></tr>
+  <tr><td><code>/api/graph/nodes?tenant=graphsync_user1_ai_avatar_saas</code></td><td><code>nodes 7 · episodes 1 · playbooks 1 · handoffs 3</code></td><td>200</td></tr>
+  <tr><td><code>/api/graph/edges?tenant=graphsync_user1_ai_avatar_saas</code></td><td><code>{"tenant":…,"edges":[8 × {from,to,type}]}</code></td><td>200</td></tr>
+  <tr><td><code>/api/graph/nodes?tenant=does_not_exist</code></td><td>empty arrays — a read <strong>never</strong> creates a graph</td><td>200</td></tr>
+</table>
+
+<h2>Do it</h2>
+<ol class="steps">
+  <li>Start FalkorDB (row 1 above). <code>docker ps</code> shows <code>falkordb Up</code>; open <code>http://localhost:3000</code> for the Browser UI.</li>
+  <li>Prove the connection: <code>cd backend &amp;&amp; uv run python health.py</code> → <code>FalkorDB OK — MATCH (n) RETURN count(n) =&gt; 1</code> (exit 0).</li>
+  <li>Seed the cockpit graphs: <code>uv run python scripts/seed_cockpit.py</code> → prints both tenant lines, <code>registry tenants=2</code>, <code>seed_cockpit OK</code>. Re-run it — the counts are byte-identical (<code>MERGE</code>-based, idempotent).</li>
+  <li>Start the backend, then: <code>curl -s -w '\nHTTP %{http_code}\n' localhost:8000/api/tenants</code> → the two-key JSON shown above, <code>HTTP 200</code>.</li>
+  <li>Start the cockpit (<code>npm run dev</code>), then: <code>curl -s -o /dev/null -w 'HTTP %{http_code}\n' http://localhost:5173/api/health</code> → <code>HTTP 200</code> (proves the Vite proxy path the browser uses).</li>
+  <li>Optional whole-demo: <code>docker compose up --build</code>, then open <code>http://localhost:5173</code>.</li>
+</ol>
+
+<div class="drill">
+Stop the database and re-run step 4. You should get <code>HTTP 503</code>, not stale data. If you still see tenants, something is falling back to a seed — that is the bug §4 is about.
+</div>
+
+<h2>3 · Walkthrough per track</h2>
+<p>Each track is proved by a script with a fixed expected stdout line. Run them in order; each is idempotent on re-run (every write is <strong>MERGE</strong>-based).</p>
+
+<h3>3.1 · Track 02 — the memory system, tier by tier</h3>
+<table>
+  <tr><th>Key-focus</th><th>Command (<code>cd backend</code>)</th><th>Expected stdout</th></tr>
+  <tr><td>H0 · named-graph router</td><td><code>uv run python scripts/verify_t0_engine.py</code></td><td><code>h0 ok — named_graph + ensure_indexes idempotent</code></td></tr>
+  <tr><td><strong>Episodic</strong> memory</td><td><code>uv run python scripts/verify_t2_2.py</code></td><td><code>turns=2 order=user,agent</code></td></tr>
+  <tr><td><strong>Semantic</strong> memory</td><td><code>uv run python scripts/verify_t2_3.py</code></td><td><code>semantic=1 facts=1 source=ok</code></td></tr>
+  <tr><td><strong>Procedural</strong> memory</td><td><code>uv run python scripts/verify_t2_4.py</code></td><td><code>workflow=1 steps=3 start=ingest</code></td></tr>
+  <tr><td>Handoff ledger</td><td><code>uv run python scripts/verify_t3_1.py</code></td><td><code>handoffs=1 edge=1</code></td></tr>
+  <tr><td>Per-tenant isolation</td><td><code>uv run python scripts/verify_t3_2.py</code></td><td><code>tenant_a=3 tenant_b=0</code></td></tr>
+  <tr><td>High concurrency</td><td><code>uv run python scripts/verify_t3_3.py</code></td><td><code>writers=16 distinct=16 same=1</code></td></tr>
+</table>
+
+<p>What each line <em>means</em> (the assertion behind it, read from the scripts):</p>
+<ul class="checklist">
+  <li><strong>turns=2 order=user,agent</strong> — two <code>:Turn</code> nodes written and recalled in timestamp order; the same user turn written twice stays one node (idempotent).</li>
+  <li><strong>semantic=1 facts=1 source=ok</strong> — an <code>:Entity</code> and a <code>:Fact</code> linked by <code>HAS_FACT</code>, with a <code>DERIVED_FROM</code> edge back to the source <code>:Turn</code> (provenance).</li>
+  <li><strong>workflow=1 steps=3 start=ingest</strong> — a stored <code>:Workflow</code> with a <code>START</code> step and a 2-edge <code>NEXT_STEP</code> chain, fetched and replayed with exactly one <code>EXECUTED</code> edge.</li>
+  <li><strong>handoffs=1 edge=1</strong> — a <code>:Handoff</code> ledger node plus one <code>HANDED_TO</code> skeleton edge; status defaults to <code>PENDING</code>; <code>TARGETS</code> points at the shared entity.</li>
+  <li><strong>tenant_a=3 tenant_b=0</strong> — tenant A's three turns are invisible to tenant B because the two <em>graph keys differ</em>, not because of a <code>WHERE</code> filter (D5).</li>
+  <li><strong>writers=16 distinct=16 same=1</strong> — 16 parallel writers lose nothing, and 16 writers on the <em>same</em> id collapse to one node (<code>MERGE</code> dedupes).</li>
+</ul>
+
+<p>The write path that makes it real (from <code>memory_service.py</code>):</p>
+<pre><code>-- episodic: MERGE the Turn, then wire actor / session / topic / entities
+MERGE (t:Turn {id: $id})
+  ON CREATE SET t.timestamp = $timestamp, t.role = $role, t.text = $text
+MERGE (actor)-[:PARTICIPATED]-&gt;(t)
+MERGE (t)-[:IN_SESSION]-&gt;(session)
+MERGE (t)-[:MENTIONS]-&gt;(entity0)
+
+-- semantic: a fact hangs off its entity, and points back at the turn it came from
+MERGE (e:Entity {id: $entityId})
+MERGE (f:Fact {id: $id}) ON CREATE SET f.statement = $statement
+SET f.confidence = $confidence
+MERGE (e)-[:HAS_FACT]-&gt;(f)
+MERGE (st:Turn {id: $sourceTurn})
+MERGE (f)-[:DERIVED_FROM]-&gt;(st)</code></pre>
+
+<h3>3.2 · Track 01 — the connected-data action engine</h3>
+<p>Sync the AST graph, then act on it. One command proves the whole track:</p>
+<pre><code>cd backend &amp;&amp; uv run python scripts/verify_track1.py; echo exit=$?</code></pre>
+<pre><code>load#1 files=107 symbols=521 tests=17 nodes=628 edges={'CALLS': 51, 'IMPORTS': 188, 'CONTAINS': 360, 'INHERITS': 28}
+load#2 files=107 symbols=521 tests=17 nodes=628 edges={'CALLS': 51, 'IMPORTS': 188, 'CONTAINS': 360, 'INHERITS': 28}
+demo_symbol=backend_app_db_named_graph
+blast_radius(hops=2): hop1=3 hop2=1 rows=4
+hotspots(top1): backend_app_config_falkordbconfig_from_env score=0.008703
+shortest_dep_path: backend_app_db_named_graph -&gt; backend_app_config_falkordbconfig_from_env hops=2
+TRACK1 OK
+exit=0</code></pre>
+<p><code>load#1</code> and <code>load#2</code> being identical is the idempotency proof: <code>graph_sync.py</code> reads <code>graphify-out/graph.json</code> and <code>MERGE</code>s <code>:File</code>/<code>:Symbol</code>/<code>:Test</code> nodes and <code>CALLS</code>/<code>IMPORTS</code>/<code>CONTAINS</code>/<code>INHERITS</code> edges into <code>code:graphhacks</code>.</p>
+
+<p><strong>Blast radius</strong> — which symbols a change could break, bucketed by hop distance (<code>falkor_action.py</code>):</p>
+<pre><code>MATCH p=(root:Symbol {id:$symbolId})&lt;-[:CALLS*1..2]-(affected:Symbol)
+WHERE affected.id &lt;&gt; $symbolId
+WITH affected, min(length(p)) AS hops
+RETURN affected.id AS id, affected.label AS label,
+       affected.source_file AS file, (affected:Test) AS is_test, hops
+ORDER BY hops ASC, id ASC</code></pre>
+
+<p><strong>Hotspots</strong> — the load-bearing symbols by PageRank over <code>CALLS</code>:</p>
+<pre><code>CALL algo.pageRank('Symbol','CALLS') YIELD node, score
+RETURN node.id AS id, node.label AS label, node.source_file AS file,
+       score ORDER BY score DESC LIMIT 5</code></pre>
+
+<p><strong>Shortest dependency path</strong> — native <code>algo.SPpaths</code>, with a Cypher fallback:</p>
+<pre><code>MATCH (a:Symbol {id:$source}), (b:Symbol {id:$target})
+CALL algo.SPpaths({sourceNode:a, targetNode:b, relTypes:['CALLS'],
+    relDirection:'outgoing', maxLen:4, pathCount:1}) YIELD path
+RETURN [n IN nodes(path) | n.id] AS node_ids,
+       [r IN relationships(path) | type(r)] AS edge_types</code></pre>
+
+<div class="finding lo">
+  <p><strong>Every action returns its own explanation.</strong> <code>ActionEngine</code> wraps each result in a <code>DecisionTrace</code> carrying the exact <code>cypher</code>, the <code>params</code>, the <code>node_ids</code>, the traversed <code>edges</code>, the <code>hop_buckets</code>, <code>row_count</code>, and <code>elapsed_ms</code> — all under <code>graph == "code:graphhacks"</code>. That trace <em>is</em> the explainable answer (T4.3).</p>
+</div>
+
+<h3>3.3 · Track 03 — the company brain</h3>
+<pre><code>cd backend &amp;&amp; uv run python scripts/verify_track3.py; echo exit=$?</code></pre>
+<pre><code>track3 OK — repo=graphhacks people=1 commits=19 files=169 symbols=292 docs=49 owners=1 trace_docs=1 spec_drift=382 doc_drift=0 cited=100%
+exit=0</code></pre>
+<p>Built on <strong>local data only</strong> (no GitHub token): <code>git log --numstat</code> + on-disk <code>docs/</code>·<code>reference/</code>·<code>lessons/</code> + <code>graphify-out/graph.json</code>. The three resolvers:</p>
+
+<p><strong><code>who_owns</code></strong> — aggregate authorship over <code>:MODIFIED</code>, resolving a path <em>or</em> a symbol to files first (<code>falkor_brain.py</code>):</p>
+<pre><code>MATCH (p:Person)-[:AUTHORED]-&gt;(c:Commit)-[m:MODIFIED]-&gt;(f:File)
+WHERE f.id IN $fileIds AND ($repo = '' OR f.repo = $repo)
+RETURN p.id AS personId, p.name AS name, count(DISTINCT c) AS commits,
+       sum(m.insertions) AS insertions, sum(m.deletions) AS deletions,
+       max(m.at) AS lastTouched, collect(DISTINCT f.id) AS fileIds
+ORDER BY commits DESC, lastTouched DESC
+LIMIT 5</code></pre>
+
+<p><strong><code>trace_why</code></strong> — cite every source that justifies a symbol or file. Evidence is the union of <code>:DOCUMENTED_IN</code> (name in a heading) and <code>:MENTIONS</code> (name in a body); <code>OPTIONAL MATCH</code> keeps a doc with no commit as a still-cited source:</p>
+<pre><code>MATCH (e:Symbol) WHERE e.id = $target OR e.name = $target
+OPTIONAL MATCH (e)-[:DOCUMENTED_IN]-&gt;(hd:Doc)
+OPTIONAL MATCH (e)&lt;-[:MENTIONS]-(md:Doc)
+WITH e, collect(DISTINCT hd.id) AS hIds, collect(DISTINCT md.id) AS mIds
+RETURN e.id AS id, 'Symbol' AS kind, hIds + mIds AS docIds</code></pre>
+
+<p><strong><code>detect_drift</code></strong> — spec drift (changed but undocumented) and doc drift (a doc still mentions a removed symbol). Removed symbols are flagged <code>present=false</code>, <strong>never</strong> deleted, so drift is observable:</p>
+<pre><code>MATCH (d:Doc)-[:MENTIONS]-&gt;(s:Symbol)
+WHERE s.present = false AND ($repo = '' OR s.repo = $repo)
+RETURN 'removed-symbol' AS kind, s.id AS id, s.name AS path_or_name,
+       collect(DISTINCT d.path) AS docPaths</code></pre>
+
+<p>Run any single stage while debugging: <code>uv run python scripts/verify_track3.py --step 3.5</code> → <code>3.5 ok — owners=1</code>.</p>
+
+<h2>4 · The rule-3 flip — why FalkorDB is load-bearing</h2>
+<p>Rule 3 is the line that matters: <em>if FalkorDB were removed, would the product still work?</em> The cockpit used to answer “yes” because it rendered a hard-coded <code>INITIAL_TENANTS</code> seed. The data seam (<code>src/data/remote.ts</code>) now fetches <code>/api/…</code> with <strong>no fallback</strong>: a FalkorDB failure becomes a rejected promise and the app renders <code>ErrorScreen</code>. Here is the flip, reproduced live:</p>
+
+<pre><code>$ curl -s -o /dev/null -w 'nodes HTTP %{http_code}\n' \
+    'http://localhost:8000/api/graph/nodes?tenant=graphsync_user1_ai_avatar_saas'
+nodes HTTP 200
+
+$ docker stop falkordb
+falkordb
+
+$ curl -s -w '\nHTTP %{http_code}\n' \
+    'http://localhost:8000/api/graph/nodes?tenant=graphsync_user1_ai_avatar_saas'
+{"detail":"FalkorDB unavailable (ConnectionError)"}
+HTTP 503                      # → getJson throws → App loadState='error' → ErrorScreen
+
+$ docker start falkordb
+falkordb
+
+$ curl -s -o /dev/null -w 'nodes HTTP %{http_code}\n' \
+    'http://localhost:8000/api/graph/nodes?tenant=graphsync_user1_ai_avatar_saas'
+nodes HTTP 200                # → Retry re-renders the graph</code></pre>
+
+<p>The same flip through the browser: reload <code>http://localhost:5173</code> with FalkorDB stopped and the cockpit shows the error screen and its <code>Retry</code> button; restart FalkorDB, click <code>Retry</code>, and the seeded graph returns. That visible break is the submission — the product depends on the graph, so the graph is doing real work.</p>
+
+<div class="callout">
+  <strong>The simulation trap.</strong> Every feature had a fake version that worked with zero FalkorDB, so the demo “worked” while proving nothing. The flip is what converts a convincing mock into a graph-backed system. Record both HTTP codes (<code>503</code> down / <code>200</code> up) as your evidence — you now have them.
+</div>
+
+<div class="finding hi">
+  <p><strong>No silent fallback, by design.</strong> <code>src/data/index.ts</code> no longer imports the seed; <code>remote.ts</code> deliberately has no fallback path. A read of an <em>unknown</em> tenant returns <code>200</code> with empty arrays and <strong>never creates a graph</strong> — the difference between “empty” (fine) and “down” (503) is exact, which is what makes the flip trustworthy.</p>
+</div>
+
+<div class="quiz" data-answer="1" data-explain="The 503 is the proof: with FalkorDB gone the read route fails and the cockpit renders ErrorScreen — there is no seed fallback.">
+  <p class="q">You stop FalkorDB. Which outcome proves the graph is load-bearing, not decorative?</p>
+  <button type="button">The app keeps rendering from the local seed copy</button>
+  <button type="button">The API returns 503 and the cockpit shows ErrorScreen</button>
+  <button type="button">The API returns 200 with an empty graph payload</button>
+  <button type="button">The app reconnects to a second database automatically</button>
+  <p class="fb"></p>
+</div>
+
+<h2>5 · The decisions — D5 / D6 / D8 / D9 / D10 in plain language</h2>
+<p>Each is an <em>expensive-to-reverse</em> choice recorded in <code>docs/decisions.md</code>. For rule 12 you need the one-sentence “why per decision”, cold. Every choice below is still a locked decision in <code>AGENTS.md</code>.</p>
+
+<table>
+  <tr><th>Decision</th><th>What it decided</th><th>Why (the one-liner to say out loud)</th></tr>
+  <tr><td><strong>D5</strong> · one graph per tenant</td><td>Episodic + semantic + procedural memory live in <em>one</em> connected graph, one named graph per tenant (<code>tenant:&lt;id&gt;</code>).</td><td>“Three separate stores look like three demos; one connected graph looks like a memory <em>system</em> — and per-tenant isolation is structural, not a <code>WHERE</code> filter.”</td></tr>
+  <tr><td><strong>D6</strong> · the MemoryService contract</td><td>All tiers go through one language-agnostic interface (<code>docs/contracts/memory-service.md</code>); every call takes <code>tenant</code> first; node/edge vocabulary fixed.</td><td>“A single typed boundary lets each tier be built and verified independently and keeps the schema from drifting — and it kept a later language port possible.”</td></tr>
+  <tr><td><strong>D8</strong> · Python backend</td><td>Backend and agent orchestration are Python/FastAPI with the official <code>falkordb</code> client; the frontend stays React/TS and talks HTTP/JSON. Supersedes D1 (Node).</td><td>“I chose Python deliberately for clarity in the agent-memory code and accepted the rewrite cost — the contract was language-agnostic precisely so this was possible.”</td></tr>
+  <tr><td><strong>D9</strong> · modular cockpit</td><td>The ~1,985-line cockpit was decomposed under <code>src/</code> with a single data-access seam (<code>src/data/</code>).</td><td>“Isolating the data seam is what let the cockpit read the real API instead of a hard-coded seed — a pure refactor with no behavior change.”</td></tr>
+  <tr><td><strong>D10</strong> · named-graph projections</td><td>Adds <code>code:&lt;repoId&gt;</code> (Track 01) and <code>company:brain</code> (Track 03) alongside <code>tenant:&lt;id&gt;</code>, all behind one router <code>db.named_graph()</code>.</td><td>“Tracks 01 and 03 reuse the same instance and router; tenant isolation is preserved and extended, not replaced.”</td></tr>
+</table>
+
+<div class="habit">
+The rule-12 test for a decision is not “what is it” but “what did it buy, and what would it cost to undo?” D5 is expensive to reverse (schema). D9 was cheap (pure refactor). Say the reversibility out loud — that is what separates a decision from a preference.
+</div>
+
+<div class="quiz" data-answer="3" data-explain="D10 records that code:&lt;repoId&gt; and company:brain are added as separate named graphs on one FalkorDB instance, preserving D5's tenant:&lt;id&gt; isolation boundary.">
+  <p class="q">Which decision records that <code>code:&lt;repoId&gt;</code> and <code>company:brain</code> join the tenant graphs on one FalkorDB instance?</p>
+  <button type="button">D5 — one named graph per tenant</button>
+  <button type="button">D6 — the MemoryService contract</button>
+  <button type="button">D9 — modular cockpit under src/</button>
+  <button type="button">D10 — code: and company: projections</button>
+  <p class="fb"></p>
+</div>
+
+<h2>6 · Vibe coder → principal architect — a ladder you can show in the graph</h2>
+<p>The cockpit's maturity dial exposes six levels. They are not decoration: the graph stores which agent produced each node at which level, so the progression is a <em>query</em>, not a claim.</p>
+
+<table>
+  <tr><th>Level</th><th>Who</th><th>What it sees</th></tr>
+  <tr><td><strong>L0</strong> · The Vibe Coder</td><td>Plain-English features &amp; safe re-prompts</td><td>What the app does, live status, bubble-up safety alerts — no code.</td></tr>
+  <tr><td><strong>L1</strong> · Indie Hacker / PM</td><td>User flows, product rules &amp; API economics</td><td>Hidden AI assumptions and per-user token/unit costs.</td></tr>
+  <tr><td><strong>L2</strong> · Junior / Bootcamp Dev</td><td>System wiring &amp; file guides</td><td>How the frontend talks to the API routes and the database.</td></tr>
+  <tr><td><strong>L3</strong> · Full-Stack Engineer</td><td>Code contracts, schemas &amp; Cypher</td><td>Real TS interfaces, FastAPI endpoints, FalkorDB schemas.</td></tr>
+  <tr><td><strong>L4</strong> · Senior Staff Engineer</td><td>Concurrency, security, GIL &amp; blast radius</td><td>Race conditions, unthrottled spend, idempotency locks.</td></tr>
+  <tr><td><strong>L5</strong> · Principal / Researcher</td><td>Big-O, GraphBLAS &amp; distributed theory</td><td>Formal complexity and citations.</td></tr>
+</table>
+
+<p>Four agent personas own rungs of that ladder. They are <code>:Agent</code> nodes in the tenant graphs, linked to the nodes they produced by <code>:PRODUCED</code>, and linked to each other by a handoff ledger:</p>
+<table>
+  <tr><th>Agent (graph id)</th><th>Rung</th><th>Role</th></tr>
+  <tr><td>VibeArchitect (<code>agent:vibe-architect</code>)</td><td>L0–L1</td><td>Turns a prompt into the vibe view and its unit economics.</td></tr>
+  <tr><td>FullStackBuilder (<code>agent:fullstack-builder</code>)</td><td>L2–L3</td><td>Wires UI → API → FalkorDB and writes the production code.</td></tr>
+  <tr><td>SeniorAuditor (<code>agent:senior-auditor</code>)</td><td>L4–L5</td><td>Audits security/spend and proves formal bounds.</td></tr>
+  <tr><td>PrincipalResearcher (<code>agent:principal-researcher</code>)</td><td>L5</td><td>Researches external best practice and formal methods.</td></tr>
+  <tr><td>LearningCoach (<code>agent:learning-coach</code>)</td><td>Lens #4</td><td>Builds the level-up bridge from the audit back to L0.</td></tr>
+</table>
+
+<p><strong>The progression is persisted two ways.</strong> First, each concept node carries <code>persona_level</code> and <code>created_by_agent</code>, and the agent that made it is connected by <code>PRODUCED</code>. Second, the handoff ledger records state transfer across rungs with <code>FROM_AGENT</code>/<code>TO_AGENT</code>/<code>TARGETS</code> (and a direct <code>HANDED_TO</code> skeleton edge). Run this against a seeded tenant and the ladder prints itself:</p>
+<pre><code>MATCH (a:Agent)-[:PRODUCED]-&gt;(n:ConceptNode)
+RETURN a.name AS agent, n.persona_level AS level, n.id AS node
+ORDER BY level ASC, node ASC</code></pre>
+<pre><code>['VibeArchitect (L0-L1)',      0, 'node_vibe_avatar_l0']
+['VibeArchitect (L0-L1)',      1, 'node_cost_avatar_l1']
+['LearningCoach (Lens #4)',    2, 'node_learning_bridge_l2']
+['FullStackBuilder (L2-L3)',   2, 'node_wiring_avatar_l2']
+['FullStackBuilder (L2-L3)',   3, 'node_lang_gil_l3']
+['SeniorAuditor (L4-L5)',      4, 'node_security_audit_l4']
+['SeniorAuditor (L4-L5)',      5, 'node_math_graphblas_l5']</code></pre>
+
+<p>And the handoff ledger shows responsibility moving down the rungs — the L0/L1 architect hands the build to L2/L3, who hand the audit to L4, who hands a learning bridge back to L0:</p>
+<pre><code>VibeArchitect (L0-L1)  →  FullStackBuilder (L2-L3)  →  node_wiring_avatar_l2      COMPLETED
+FullStackBuilder       →  SeniorAuditor (L4-L5)     →  node_security_audit_l4     ALERT_RAISED
+SeniorAuditor          →  LearningCoach (Lens #4)   →  node_learning_bridge_l2    COMPLETED</code></pre>
+
+<div class="habit">
+Your arc is the project. Narrate it as: <em>“I started at L0 — generated a foundation with AI and couldn't explain it. Then I moved up by doing L2/L3 work (contracts, a Python backend, a real data seam), L4 work (concurrency, load-bearing proofs, blast radius), and L5 work (systematic decisions, this guide). The graph records that arc — <code>persona_level</code> and the handoff ledger are the receipts.”</em> That is the strongest possible answer to rule 12: not “I used AI”, but “I learned to direct it and to justify every choice.”
+</div>
+
+<h2>7 · Glossary + next</h2>
+<p>Use these terms exactly — they are the canonical language of this workspace (<a href="../GLOSSARY.md">GLOSSARY.md</a>).</p>
+<table>
+  <tr><th>Term</th><th>Meaning here</th></tr>
+  <tr><td><strong>Agent memory</strong></td><td>Persistent, queryable state an agent reads and writes across sessions — not the context window, not RAG.</td></tr>
+  <tr><td><strong>Episodic memory</strong></td><td>Timestamped event nodes (<code>:Turn</code>) linked to the entities involved, so the agent recalls “what happened last time.”</td></tr>
+  <tr><td><strong>Semantic memory</strong></td><td>Durable factual knowledge — <code>:Entity</code>/<code>:Fact</code> and their relationships — independent of any one interaction.</td></tr>
+  <tr><td><strong>Procedural memory</strong></td><td>Reusable workflow subgraphs (<code>:Workflow</code>/<code>:Step</code>) an agent can re-execute.</td></tr>
+  <tr><td><strong>Three-tier memory model</strong></td><td>The composition of episodic, semantic, and procedural memory into one connected graph.</td></tr>
+  <tr><td><strong>Handoff</strong></td><td>Transfer of state and responsibility between agents, recorded in the graph — not message passing.</td></tr>
+  <tr><td><strong>Graph database / node / edge</strong></td><td>Data stored as nodes and typed, directed relationships traversed directly, rather than joined tables.</td></tr>
+  <tr><td><strong>Cypher</strong></td><td>The declarative query language for FalkorDB, in which patterns are drawn with ASCII art.</td></tr>
+  <tr><td><strong>Multi-graph / multi-tenant topology</strong></td><td>FalkorDB holding many isolated graphs in one instance — one memory graph per tenant without a separate deployment.</td></tr>
+  <tr><td><strong>MERGE</strong></td><td>The clause that matches a pattern or creates it — the basis of idempotent memory writes.</td></tr>
+  <tr><td><strong>GraphRAG</strong></td><td>Retrieval where the context is a subgraph traversed by relationships, not loose text chunks.</td></tr>
+  <tr><td><strong>Spec card / exit criterion</strong></td><td>A five-line task brief, whose single verifiable check is stated before work begins.</td></tr>
+</table>
+
+<p>Keep reading: <a href="CURRICULUM.html">the curriculum</a> · <a href="insight.html">the insight page</a> · <a href="graph-schema.html">the graph data model</a> · <a href="cypher-cheatsheet.html">the Cypher cheat sheet</a> · <a href="track02-checklist.html">the Track 02 check-off</a> · <a href="../lessons/0205-extend-to-tracks-1-and-3.html">lesson 0205 (extend to Tracks 1 &amp; 3)</a> · <a href="../lessons/0012-shipping-the-submission.html">lesson 0012 (ship it)</a>.</p>
+
+<div class="source">
+  <h3>Primary sources</h3>
+  <p>Rules and track definitions — <a href="https://www.wemakedevs.org/hackathons/falkordb">Graph Hacks event page</a> · <a href="https://www.wemakedevs.org/hackathons/falkordb/rules">Graph Hacks rules (rules 2, 3, 10, 11, 12)</a>. Agent-memory taxonomy and Cypher patterns — <a href="https://www.falkordb.com/blog/graph-database-ai-agents">FalkorDB, Graph Database AI Agents: GraphRAG &amp; Memory Guide</a>. Algorithms (<code>algo.pageRank</code>, <code>algo.SPpaths</code>) — <a href="https://docs.falkordb.com/algorithms/">FalkorDB graph algorithms docs</a>.</p>
+  <p>Project evidence: <code>docs/decisions.md</code> (D5–D10) · <code>docs/superpowers/specs/2026-10-17-nexus-three-tracks-design.md</code> · <code>docs/superpowers/plans/2026-10-17-nexus-three-tracks.md</code> · the <code>backend/scripts/verify_*.py</code> scripts, all re-run live 2026-10-17. Terms match <a href="../GLOSSARY.md">GLOSSARY.md</a>.</p>
+</div>
+
+<footer>
+  <p>GraphHacks Nexus · Built, Explained, Walked Through · <a href="CURRICULUM.html">curriculum</a> · <a href="insight.html">insight</a> · <a href="graph-schema.html">data model</a>. Every command runs; every expected line is copied from the real script. Stuck? Ask your teacher in opencode.</p>
+</footer>
+
+<script src="../assets/quiz.js"></script>
+</body>
+</html>

@@ -13,12 +13,16 @@ from . import cockpit
 from .db import HEALTH_GRAPH, count_nodes
 from .models import EdgesResponse, NodesResponse, TenantsResponse
 from .observability import span
+from .routes_tracks import router as tracks_router
 
 app = FastAPI(
     title="GraphHacks Track 02 — Memory API",
     version="0.1.0",
     description="Python backend + FalkorDB memory service (decision D8).",
 )
+
+# Track 01 (code:<repoId>) + Track 03 (company:brain) routes (D10).
+app.include_router(tracks_router)
 
 
 @app.get("/")

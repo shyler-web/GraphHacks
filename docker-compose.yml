@@ -1,0 +1,38 @@
+# One-command local demo (D4): FalkorDB + FastAPI backend + nginx-served cockpit.
+#   docker compose up --build            → http://localhost:5173
+#   docker compose stop falkordb         → cockpit shows ErrorScreen (rule 3)
+# No secrets here: only non-secret host/port. See .env.example.
+
+name: graphhacks
+
+services:
+  falkordb:
+    image: falkordb/falkordb:latest
+    ports:
+      - "6379:6379"   # Redis protocol (backend + host clients)
+      - "3000:3000"   # FalkorDB Browser UI
+    volumes:
+      - falkordb-data:/var/lib/falkordb/data
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      FALKORDB_HOST: falkordb
+      FALKORDB_PORT: "6379"
+    # No host port: nginx (frontend) reaches it as http://backend:8000 on the
+    # compose network. Avoids colliding with a host-run `uvicorn` on 8000.
+    depends_on:
+      - falkordb
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  falkordb-data:

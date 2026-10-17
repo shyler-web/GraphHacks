@@ -1,0 +1,7 @@
+# Keep the backend image build context small and secret-free.
+.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.env.*
