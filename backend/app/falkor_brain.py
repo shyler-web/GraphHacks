@@ -238,6 +238,25 @@ def _git_log_numstat(repo_path: str | pathlib.Path) -> str:
     return proc.stdout
 
 
+def _git_head_paths(repo_path: str | pathlib.Path) -> set[str]:
+    """Paths present in ``HEAD`` — so deleted files stay ``present = false``.
+
+    Uses the git object tree (not the worktree) because the compose image mounts
+    only ``.git`` for Track 03. Falls back to an empty set when git is
+    unavailable, in which case the caller can use the on-disk check.
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(repo_path), "ls-tree", "-r", "--name-only", "HEAD"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    if proc.returncode != 0:
+        return set()
+    return {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+
+
 def _parse_git_log(text: str) -> tuple[list[dict], list[dict], dict[str, str]]:
     """Parse ``--numstat`` output into commits, modified files, and people."""
     commits: list[dict] = []
@@ -315,8 +334,7 @@ MERGE (p)-[:AUTHORED]->(c)
 _FILE_CYPHER = """
 UNWIND $files AS row
 MERGE (f:File {id: row.id})
-ON CREATE SET f.repo = row.repo, f.path = row.path
-SET f.present = true
+SET f.repo = row.repo, f.path = row.path, f.present = row.present
 """
 
 _MARK_DOCS_CYPHER = """
@@ -404,7 +422,8 @@ LIMIT {limit}
 # still yields a cited answer (100% cited).
 _TRACE_TARGET = """
 MATCH (e:Symbol)
-WHERE e.id = $target OR e.name = $target
+WHERE (e.id = $target OR e.name = $target)
+  AND coalesce(e.present, true) = true
 OPTIONAL MATCH (e)-[:DOCUMENTED_IN]->(hd:Doc)
 OPTIONAL MATCH (e)<-[:MENTIONS]-(md:Doc)
 WITH e, collect(DISTINCT hd.id) AS hIds, collect(DISTINCT md.id) AS mIds
@@ -412,11 +431,17 @@ RETURN e.id AS id, 'Symbol' AS kind, hIds + mIds AS docIds
 UNION
 MATCH (e:File)
 WHERE (e.id = $target OR e.path = $target) AND NOT e:Doc
-OPTIONAL MATCH (e)-[:DOCUMENTED_IN]->(d:Doc)
-RETURN e.id AS id, 'File' AS kind, collect(DISTINCT d.id) AS docIds
+  AND coalesce(e.present, true) = true
+OPTIONAL MATCH (e)<-[:MENTIONS]-(md:Doc)
+OPTIONAL MATCH (e)-[:DEFINES]->(:Symbol)<-[:MENTIONS]-(sd:Doc)
+OPTIONAL MATCH (e)-[:DEFINES]->(:Symbol)-[:DOCUMENTED_IN]->(hd:Doc)
+WITH e, collect(DISTINCT md.id) AS mIds,
+     collect(DISTINCT sd.id) AS sIds, collect(DISTINCT hd.id) AS hIds
+RETURN e.id AS id, 'File' AS kind, mIds + sIds + hIds AS docIds
 UNION
 MATCH (e:Doc)
-WHERE e.id = $target OR e.path = $target
+WHERE (e.id = $target OR e.path = $target)
+  AND coalesce(e.present, true) = true
 RETURN e.id AS id, 'Doc' AS kind, [e.id] AS docIds
 """
 
@@ -424,7 +449,7 @@ RETURN e.id AS id, 'Doc' AS kind, [e.id] AS docIds
 # (Review Focus #3): doc_path is always surfaced, commit/person may be null.
 _TRACE_SOURCES = """
 MATCH (d:Doc)
-WHERE d.id IN $docIds
+WHERE d.id IN $docIds AND coalesce(d.present, true) = true
 OPTIONAL MATCH (c:Commit)-[:MODIFIED]->(d)
 OPTIONAL MATCH (p:Person)-[:AUTHORED]->(c)
 RETURN DISTINCT d.id AS docId, d.path AS docPath, d.title AS docTitle,
@@ -456,6 +481,7 @@ ORDER BY lastTouched DESC
 _DRIFT_D2 = """
 MATCH (c:Commit)-[m:MODIFIED]->(f:File)-[:DEFINES]->(s:Symbol)
 WHERE ($repo = '' OR f.repo = $repo) AND m.at >= $since
+  AND s.present = true
 WITH s, max(m.at) AS lastTouched
 OPTIONAL MATCH (s)-[:DOCUMENTED_IN]->(dd:Doc)
 WITH s, lastTouched, count(dd) AS documented
@@ -527,12 +553,21 @@ class FalkorBrain:
                 for c in commits
             ]
 
-            file_map: dict[str, str] = {}
+            present_paths = _git_head_paths(repo_path)
+            file_map: dict[str, dict] = {}
             modified_rows: list[dict] = []
             doc_ids: list[str] = []
             for row in modified:
                 file_id = f"{repo_id}#{row['path']}"
-                file_map[file_id] = row["path"]
+                # A historical path that no longer exists in HEAD is recorded
+                # (so ownership/drift history is preserved) but never presented
+                # as current.
+                present = (
+                    row["path"] in present_paths
+                    if present_paths
+                    else (pathlib.Path(repo_path) / row["path"]).exists()
+                )
+                file_map[file_id] = {"path": row["path"], "present": present}
                 modified_rows.append(
                     {
                         "sha": row["sha"],
@@ -557,8 +592,13 @@ class FalkorBrain:
                     graph.query(_AUTHORED_CYPHER, params={"commits": commit_rows})
                 if file_map:
                     files = [
-                        {"id": fid, "repo": repo_id, "path": path}
-                        for fid, path in file_map.items()
+                        {
+                            "id": fid,
+                            "repo": repo_id,
+                            "path": meta["path"],
+                            "present": meta["present"],
+                        }
+                        for fid, meta in file_map.items()
                     ]
                     graph.query(_FILE_CYPHER, params={"files": files})
                 if doc_ids:
@@ -663,6 +703,15 @@ class FalkorBrain:
                     documented_rows.append({"docId": doc_id, "name": name})
 
             with db.named_graph(self._graph_key, self._config) as graph:
+                # Rebuild doc-derived evidence from scratch on every pass:
+                # prune stale MENTIONS/DOCUMENTED_IN edges, then flag every known
+                # doc stale (removed docs are never DETACH DELETEd — they are the
+                # doc-drift signal).
+                graph.query("MATCH (d:Doc)-[m:MENTIONS]->() DELETE m", params={})
+                graph.query(
+                    "MATCH ()-[x:DOCUMENTED_IN]->(d:Doc) DELETE x", params={}
+                )
+                graph.query("MATCH (d:Doc) SET d.present = false", params={})
                 if doc_rows:
                     graph.query(_DOC_CYPHER, params={"docs": doc_rows})
                 if mention_symbol_rows:

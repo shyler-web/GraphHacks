@@ -68,6 +68,22 @@ TENANT_INDEX_SPECS: list[tuple[str, str]] = [
 _INDEX_LOCK = threading.Lock()
 _INDEXED_TENANTS: set[str] = set()
 
+# FalkorDB rejects parameters in ``LIMIT``, so the value has to be inlined. Keep
+# every caller bounded so a hostile/overflowing value can never reach Cypher.
+MIN_LIMIT = 1
+MAX_LIMIT = 1000
+
+
+def _clamp_limit(value: object, lo: int = MIN_LIMIT, hi: int = MAX_LIMIT) -> int | None:
+    """Coerce a query ``limit`` into ``[lo, hi]`` (``None`` means "no limit")."""
+    if value is None:
+        return None
+    try:
+        parsed = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        parsed = lo
+    return max(lo, min(hi, parsed))
+
 
 def _node_properties(value: object) -> dict[str, object] | None:
     """Return a node's property map, tolerating dict/node client shapes."""
@@ -213,10 +229,11 @@ class MemoryService:
                 f"ORDER BY t.timestamp {direction}, t.id {direction}",
             ]
         )
-        if q.limit is not None:
-            # FalkorDB does not accept parameters in LIMIT; `limit` is a
-            # validated int, so inlining it is injection-safe.
-            clauses.append(f"LIMIT {int(q.limit)}")
+        limit = _clamp_limit(q.limit)
+        if limit is not None:
+            # FalkorDB does not accept parameters in LIMIT; ``_clamp_limit``
+            # guarantees a bounded int before it is inlined.
+            clauses.append(f"LIMIT {limit}")
 
         with span("memory.recall_turns"):
             with db.tenant_graph(tenant, self._config) as graph:
@@ -354,9 +371,9 @@ class MemoryService:
                 "ORDER BY f.confidence DESC, f.id ASC",
             ]
         )
-        if q.limit is not None:
-            # FalkorDB rejects params in LIMIT; `limit` is a validated int.
-            clauses.append(f"LIMIT {int(q.limit)}")
+        limit = _clamp_limit(q.limit)
+        if limit is not None:
+            clauses.append(f"LIMIT {limit}")
 
         with span("memory.recall_facts"):
             with db.tenant_graph(tenant, self._config) as graph:
@@ -396,8 +413,9 @@ class MemoryService:
             clauses.append("WHERE " + " AND ".join(filters))
         clauses.append("RETURN e.id AS id, e.name AS name, e.type AS type")
         clauses.append("ORDER BY e.name ASC, e.id ASC")
-        if q.limit is not None:
-            clauses.append(f"LIMIT {int(q.limit)}")
+        limit = _clamp_limit(q.limit)
+        if limit is not None:
+            clauses.append(f"LIMIT {limit}")
 
         with span("memory.query_entities"):
             with db.tenant_graph(tenant, self._config) as graph:
@@ -463,6 +481,17 @@ class MemoryService:
 
         with span("memory.save_workflow"):
             with db.tenant_graph(tenant, self._config) as graph:
+                # Drop the workflow's previous step chain (START + NEXT_STEP and
+                # the now-orphaned :Step nodes) so a shorter/changed step list
+                # cannot leave a stale tail behind. Bounded traversal.
+                graph.query(
+                    "MATCH (w:Workflow {id: $id}) "
+                    "OPTIONAL MATCH (w)-[:START]->(s0:Step) "
+                    "OPTIONAL MATCH (s0)-[:NEXT_STEP*0..100]->(s:Step) "
+                    "WITH collect(DISTINCT s) AS oldSteps "
+                    "UNWIND oldSteps AS st DETACH DELETE st",
+                    params={"id": workflow_id},
+                )
                 graph.query("\n".join(clauses), params=params)
 
         return Workflow(
@@ -487,7 +516,7 @@ class MemoryService:
         cypher = (
             "MATCH (w:Workflow {id: $id})\n"
             "OPTIONAL MATCH (w)-[:START]->(s0)\n"
-            "OPTIONAL MATCH (s0)-[:NEXT_STEP*0..]->(s:Step)\n"
+            "OPTIONAL MATCH (s0)-[:NEXT_STEP*0..100]->(s:Step)\n"
             "OPTIONAL MATCH (w)-[:USES]->(t:Tool)\n"
             "WITH w, collect(DISTINCT s) AS steps, collect(DISTINCT t.id) AS toolIds\n"
             "RETURN w.name AS name, w.trigger_domain AS domain, steps, toolIds"
@@ -574,7 +603,10 @@ class MemoryService:
 
         clauses = [
             "MERGE (h:Handoff {id: $id}) "
-            "ON CREATE SET h.created_at = $ts, h.reason = $reason, h.status = $status",
+            "ON CREATE SET h.created_at = $ts, h.reason = $reason",
+            # Status is mutable state (PENDING → COMPLETED), so it is SET on
+            # every record, not only ON CREATE.
+            "SET h.status = $status",
             "MERGE (from:Agent {id: $fromId})",
             "MERGE (to:Agent {id: $toId})",
             "MERGE (h)-[:FROM_AGENT]->(from)",
@@ -644,8 +676,9 @@ class MemoryService:
                 "ORDER BY h.created_at DESC",
             ]
         )
-        if q.limit is not None:
-            clauses.append(f"LIMIT {int(q.limit)}")
+        limit = _clamp_limit(q.limit)
+        if limit is not None:
+            clauses.append(f"LIMIT {limit}")
 
         with span("memory.read_handoffs"):
             with db.tenant_graph(tenant, self._config) as graph:

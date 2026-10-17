@@ -16,10 +16,20 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .                 # repo root: bake graphify-out/graph.json
+      dockerfile: backend/Dockerfile
     environment:
       FALKORDB_HOST: falkordb
       FALKORDB_PORT: "6379"
+      REPO_ROOT: /repo           # routes_tracks resolves artifacts here
+    # Track 01/03 sync needs the live AST graph and git history; ingest_docs
+    # reads the on-disk docs. Read-only so the demo cannot mutate the checkout.
+    volumes:
+      - ./graphify-out:/repo/graphify-out:ro
+      - ./.git:/repo/.git:ro
+      - ./docs:/repo/docs:ro
+      - ./reference:/repo/reference:ro
+      - ./lessons:/repo/lessons:ro
     # No host port: nginx (frontend) reaches it as http://backend:8000 on the
     # compose network. Avoids colliding with a host-run `uvicorn` on 8000.
     depends_on:

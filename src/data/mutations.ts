@@ -1,4 +1,11 @@
 import type { ConceptEdge, ConceptNode, TenantMap } from './types';
+import {
+  loadTenants,
+  writeTrack2Graph,
+  writeTrack2Handoff,
+  writeTrack2Turn,
+  writeTrack2Workflow
+} from './remote';
 import { DOMAIN_LENSES } from '../graph/domainLenses';
 import { declutterNodes, type DeclutterMode } from '../graph/layout';
 import type { LastBuildBanner } from '../shared/types';
@@ -323,4 +330,113 @@ export function addFeatureStack(
     },
     banner
   };
+}
+
+/**
+ * Apply the senior fix through the real backend, then reload the projection.
+ *
+ * Persists the new :Workflow (playbook), :Turn (episode), the approval :Handoff
+ * and the two flipped :ConceptNode rows; the returned map is a fresh FalkorDB
+ * read, so the UI cannot claim persistence the graph did not receive.
+ */
+export async function applySeniorFixAndPersist(
+  tenants: TenantMap,
+  tenantKey: string,
+  riskNode: ConceptNode,
+  targetL0Node: ConceptNode | null
+): Promise<TenantMap> {
+  const optimistic = applySeniorFix(tenants, tenantKey, riskNode, targetL0Node);
+  const tenant = optimistic[tenantKey];
+  const playbook = tenant.playbooks[0];
+  const episode = tenant.episodes[0];
+  const fixHandoffId = `h_fix_${Date.now()}`;
+
+  await writeTrack2Handoff(tenantKey, {
+    id: fixHandoffId,
+    reason: playbook.enforced_action,
+    status: 'PLAYBOOK_ENFORCED',
+    fromAgentId: 'agent:senior-auditor',
+    toAgentId: 'agent:fullstack-builder',
+    targetEntityId: targetL0Node?.id ?? riskNode.id
+  });
+  await writeTrack2Workflow(tenantKey, {
+    id: playbook.id,
+    name: playbook.rule_name,
+    triggerDomain: playbook.trigger_domain,
+    learnedFrom: fixHandoffId,
+    steps: [
+      {
+        order: 0,
+        action: playbook.enforced_action,
+        expectedResult: 'Guardrail enforced on the target route'
+      }
+    ],
+    toolIds: []
+  });
+  await writeTrack2Turn(tenantKey, {
+    id: episode.id,
+    role: 'agent',
+    text: `${episode.prompt} — ${episode.summary}`,
+    sessionId: `session:${episode.session}`,
+    agentId: 'agent:senior-auditor'
+  });
+  await writeTrack2Graph(
+    tenantKey,
+    tenant.nodes.filter(
+      (n) => n.id === riskNode.id || (targetL0Node !== null && n.id === targetL0Node.id)
+    ),
+    []
+  );
+
+  return loadTenants();
+}
+
+/**
+ * Add a feature stack through the real backend, then reload the projection.
+ *
+ * Persists the six L0–L5 :ConceptNode rows + DEEPER_AT/ENDANGERS edges, the new
+ * :Turn (episode) and the coordination :Handoff. The caller gets a fresh
+ * FalkorDB read plus a banner marked `persisted: true`.
+ */
+export async function addFeatureStackAndPersist(
+  tenants: TenantMap,
+  input: FeatureStackInput
+): Promise<{ tenants: TenantMap; banner: LastBuildBanner }> {
+  const { tenants: optimistic, banner } = addFeatureStack(tenants, input);
+  const tenant = optimistic[input.targetTenantKey];
+  const newIds = new Set([
+    input.newL0Id,
+    input.newL1Id,
+    input.newL2Id,
+    input.newL3Id,
+    input.newL4Id,
+    input.newL5Id
+  ]);
+  const newNodes = tenant.nodes.filter((n) => newIds.has(n.id));
+  const newEdges = tenant.edges.filter(
+    (e) => newIds.has(e.from) && newIds.has(e.to)
+  );
+  const episode = tenant.episodes[0];
+  const handoff = tenant.handoffs[0];
+
+  await writeTrack2Graph(input.targetTenantKey, newNodes, newEdges);
+  await writeTrack2Turn(input.targetTenantKey, {
+    id: episode.id,
+    role: 'agent',
+    text: episode.summary,
+    sessionId: `session:${episode.session}`,
+    agentId: 'agent:vibe-architect'
+  });
+  await writeTrack2Handoff(input.targetTenantKey, {
+    id: handoff.id,
+    reason: episode.summary,
+    status: handoff.status,
+    fromAgentId: input.hasRateLimitPlaybook
+      ? 'agent:fullstack-builder'
+      : 'agent:vibe-architect',
+    toAgentId: 'agent:senior-auditor',
+    targetEntityId: input.newL0Id
+  });
+
+  return { tenants: await loadTenants(), banner: { ...banner, persisted: true } };
 }

@@ -5,7 +5,14 @@ import { PERSONA_LEVELS } from './graph/personaLevels';
 import { getVisibleNodes, getBubbleUpRisks, getSelectedNode } from './graph/selectors';
 import { buildLiveCypherQuery } from './graph/cypher';
 import type { DeclutterMode } from './graph/layout';
-import { moveNode, declutterTenant, applySeniorFix, addFeatureStack } from './data/mutations';
+import {
+  moveNode,
+  declutterTenant,
+  applySeniorFix,
+  addFeatureStack,
+  applySeniorFixAndPersist,
+  addFeatureStackAndPersist
+} from './data/mutations';
 import { callGeminiWithBackoff } from './orchestration/gemini';
 import { buildCoachPayload, buildResearchPayload, buildFeaturePayload } from './orchestration/prompts';
 import Header from './panels/Header';
@@ -38,7 +45,9 @@ export default function App() {
   const [lastBuildBanner, setLastBuildBanner] = useState(null);
   const [copiedCypher, setCopiedCypher] = useState(false);
 
-  const [useLiveGemini, setUseLiveGemini] = useState(true);
+  // Live mode goes through the server-side proxy (`/api/gemini/generate`); no
+  // API key is ever shipped to the browser bundle.
+  const [useLiveGemini, setUseLiveGemini] = useState(false);
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachOutputs, setCoachOutputs] = useState({});
   const [groundingLoading, setGroundingLoading] = useState(false);
@@ -174,8 +183,23 @@ export default function App() {
   );
 
 
-  const handleApplySeniorFix = (riskNode, targetL0Node) => {
-    setTenants((prev) => applySeniorFix(prev, activeTenantKey, riskNode, targetL0Node));
+  const handleApplySeniorFix = async (riskNode, targetL0Node) => {
+    // Optimistic paint, then replace with a fresh FalkorDB read on success. If
+    // the write fails the banner says this is a local preview, not persistence.
+    setTenants(applySeniorFix(tenants, activeTenantKey, riskNode, targetL0Node));
+    try {
+      const fresh = await applySeniorFixAndPersist(
+        tenants,
+        activeTenantKey,
+        riskNode,
+        targetL0Node
+      );
+      setTenants(fresh);
+    } catch (err) {
+      setLlmErrorBanner(
+        `Senior fix was not persisted to FalkorDB (${(err as Error).message}); showing a local preview only.`
+      );
+    }
   };
 
   const handleAskGeminiCoach = async (node) => {
@@ -292,24 +316,35 @@ export default function App() {
       ? 'Database'
       : 'AIModelsPrompts';
 
-    setTenants((prev) => {
-      const result = addFeatureStack(prev, {
-        targetTenantKey,
-        ts,
-        textToRun,
-        detectedDomain,
-        hasRateLimitPlaybook,
-        aiGeneratedSpec,
-        newL0Id,
-        newL1Id,
-        newL2Id,
-        newL3Id,
-        newL4Id,
-        newL5Id
-      });
+    const stackInput = {
+      targetTenantKey,
+      ts,
+      textToRun,
+      detectedDomain,
+      hasRateLimitPlaybook,
+      aiGeneratedSpec,
+      newL0Id,
+      newL1Id,
+      newL2Id,
+      newL3Id,
+      newL4Id,
+      newL5Id
+    };
+
+    try {
+      // Write the six ConceptNodes + edges, the Episode (:Turn) and the Handoff
+      // to FalkorDB, then use the reloaded projection as the source of truth.
+      const result = await addFeatureStackAndPersist(tenants, stackInput);
+      setTenants(result.tenants);
       setLastBuildBanner(result.banner);
-      return result.tenants;
-    });
+    } catch (err) {
+      const local = addFeatureStack(tenants, stackInput);
+      setTenants(local.tenants);
+      setLastBuildBanner({ ...local.banner, persisted: false });
+      setLlmErrorBanner(
+        `Graph write failed (${(err as Error).message}); showing a local preview only.`
+      );
+    }
 
     setSelectedNodeId(newL0Id);
     setPromptInput('');

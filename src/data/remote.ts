@@ -101,12 +101,16 @@ export async function loadTenants(): Promise<TenantMap> {
 // named graphs. Same no-fallback rule as the tenant reads (rule 3).
 // ---------------------------------------------------------------------------
 
-async function postJson<T>(url: string): Promise<T> {
+async function postJson<T>(url: string, body?: unknown): Promise<T> {
   let response: Response;
   try {
     response = await fetch(url, {
       method: 'POST',
-      headers: { Accept: 'application/json' }
+      headers: {
+        Accept: 'application/json',
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' })
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });
   } catch (err) {
     throw new ApiError(`Cannot reach the backend: ${(err as Error).message}`, 0);
@@ -147,11 +151,13 @@ export interface TraceEdge {
 /** The explainable-answer trace every Track 01 action carries. */
 export interface DecisionTraceView {
   cypher: string;
+  params: Record<string, unknown>;
   node_ids: string[];
   elapsed_ms: number;
   graph: string;
   row_count: number;
   edges: TraceEdge[];
+  hop_buckets: Track01HopBucket[];
 }
 
 export interface Track01BlastRadius {
@@ -292,4 +298,72 @@ export async function fetchTrack03Drift(): Promise<Track03Drift> {
 /** Idempotently re-ingest commits + symbols + docs into `company:brain`. */
 export async function syncTrack03(): Promise<Track03SyncStats> {
   return postJson<Track03SyncStats>('/api/track3/sync');
+}
+
+// -- Track 02 write path ----------------------------------------------------
+//
+// The cockpit controls write real :Turn/:Workflow/:Handoff/:ConceptNode rows via
+// `MemoryService`; `App` reloads the projection afterwards so nothing is a
+// React-only illusion.
+
+export interface Track2TurnInput {
+  id?: string;
+  timestamp?: number;
+  role: 'user' | 'agent' | 'tool';
+  text: string;
+  responseQuality?: number;
+  sessionId?: string;
+  userId?: string;
+  agentId?: string;
+  topic?: string;
+  mentions?: string[];
+}
+
+export interface Track2WorkflowInput {
+  id?: string;
+  name: string;
+  triggerDomain: string;
+  learnedFrom?: string;
+  steps: { order: number; action: string; expectedResult?: string; id?: string }[];
+  toolIds?: string[];
+}
+
+export interface Track2HandoffInput {
+  id?: string;
+  createdAt?: number;
+  reason: string;
+  status?: string;
+  fromAgentId: string;
+  toAgentId: string;
+  targetEntityId?: string;
+}
+
+export async function writeTrack2Turn(
+  tenant: string,
+  turn: Track2TurnInput
+): Promise<void> {
+  await postJson('/api/track2/turn', { tenant, turn });
+}
+
+export async function writeTrack2Workflow(
+  tenant: string,
+  workflow: Track2WorkflowInput
+): Promise<void> {
+  await postJson('/api/track2/workflow', { tenant, workflow });
+}
+
+export async function writeTrack2Handoff(
+  tenant: string,
+  handoff: Track2HandoffInput
+): Promise<void> {
+  await postJson('/api/track2/handoff', { tenant, handoff });
+}
+
+/** Persist cockpit ConceptNodes + typed edges (projection write, D11). */
+export async function writeTrack2Graph(
+  tenant: string,
+  nodes: ConceptNode[],
+  edges: ConceptEdge[]
+): Promise<void> {
+  await postJson('/api/track2/graph', { tenant, nodes, edges });
 }

@@ -103,13 +103,7 @@ def ensure_indexes(
 def count_nodes(
     graph_name: str = HEALTH_GRAPH, config: FalkorDBConfig | None = None
 ) -> int:
-    """Run ``MATCH (n) RETURN count(n)`` against a graph and return the count."""
-    db = connect(config)
-    try:
-        graph = db.select_graph(graph_name)
+    """Run ``MATCH (n) RETURN count(n)`` via the single ``named_graph`` router."""
+    with named_graph(graph_name, config) as graph:
         result = graph.query("MATCH (n) RETURN count(n)")
         return int(result.result_set[0][0])
-    finally:
-        close = getattr(db, "close", None)
-        if callable(close):
-            close()

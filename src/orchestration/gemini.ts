@@ -1,7 +1,12 @@
 // Gemini call with simple exponential-backoff retry. No framework, per D2.
+//
+// The browser never holds an API key: requests go to the backend proxy at
+// `/api/gemini/generate`, which reads `GEMINI_API_KEY` from the server
+// environment. With no key configured the proxy answers 503 and the cockpit
+// falls back to its deterministic synthesizer.
+const apiUrl = '/api/gemini/generate';
+
 export async function callGeminiWithBackoff(payload: any): Promise<any> {
-  const apiKey = "";
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
   const delays = [1000, 2000, 4000];
 
   for (let attempt = 0; attempt <= delays.length; attempt++) {

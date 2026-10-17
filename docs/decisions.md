@@ -85,3 +85,11 @@ One record per expensive-to-reverse decision. Format per lesson 0108: **Decision
 - **Reversibility:** Cheap-ish. The router is one function (`db.named_graph`); dropping a projection is a config change, and the sync scripts are idempotent. Tenant graphs are untouched.
 - **Revisit if:** a projection cannot be expressed through the existing `MemoryService`/engine boundaries, the local demo's single-instance budget is exceeded, or rule 3 cannot be shown for a projection (in which case that track's entry is dropped, not faked).
 - **Scope note (Track 03):** no GitHub token → built on local `git log` commits + on-disk docs + the AST graph only; PRs/issues are explicitly deferred.
+
+## D11 · Cockpit projection graph + tenant registry
+
+- **Decision:** The cockpit reads a **projection** of the tenant memory graph: `:ConceptNode` nodes plus its `:Turn`/`:Session`/`:Topic` (→ `Episode`), `:Workflow`/`:Step` (→ `Playbook`), and `:Handoff` (→ `Handoff`) mapped to the `src/data/types.ts` shapes by `backend/app/cockpit.py`. A separate named graph **`graphhacks_registry`** holds `:Tenant {id, name}` so `GET /api/tenants` can list tenants without reading every `tenant:<id>` graph. The projection and registry are **read-side only**; every write still goes through `MemoryService` into `tenant:<id>` (D5/D6).
+- **Why:** The cockpit's existing UI vocabulary (`ConceptNode` with `persona_level`/`created_by_agent`, `Episode`, `Playbook`) predates the contract's node labels and is not in `reference/graph-schema.html`. Recording the projection keeps D6's "one boundary" honest — the extra label is a documented read view, not a second write model — and the registry keeps `/api/tenants` a single bounded query.
+- **Alternatives:** rename the UI to the contract vocabulary (churns the working cockpit for no demo value); read every `tenant:*` graph to list tenants (an unbounded fan-out); add `:ConceptNode` to the D6 contract (would pollute the memory vocabulary with a UI concern).
+- **Reversibility:** Easy. `cockpit.py` is one module; the registry is one graph. Removing the projection does not touch tenant memory.
+- **Revisit if:** the projection needs a field the memory graph cannot supply without denormalising write-time data into `MemoryService`, or a second consumer needs the registry.

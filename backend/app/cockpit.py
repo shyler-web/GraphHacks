@@ -17,6 +17,7 @@ untouched so the HTTP layer can translate it into a 503 (rule 3).
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from . import db
@@ -51,24 +52,35 @@ ORDER BY source ASC, target ASC, type ASC
 _EPISODES_CYPHER = """
 MATCH (t:Turn)-[:IN_SESSION]->(s:Session)
 RETURN t.id AS id, coalesce(s.name, s.id) AS session, t.text AS prompt,
-       t.summary AS summary, t.timestamp AS timestamp
+       coalesce(t.summary, t.text, '') AS summary, t.timestamp AS timestamp
 ORDER BY t.id ASC
 """
 
+# A MemoryService-written :Workflow has no `enforced_action`/`learned_from`
+# properties: the action is the first :Step and provenance is the LEARNED_FROM
+# edge. Derive both so seed rows and service rows share one projection.
 _PLAYBOOKS_CYPHER = """
 MATCH (w:Workflow)
+OPTIONAL MATCH (w)-[:START]->(s0:Step)
+OPTIONAL MATCH (w)-[:LEARNED_FROM]->(h:Handoff)
+WITH w, s0, head(collect(DISTINCT h.id)) AS learnedId
 RETURN w.id AS id, w.name AS rule_name, w.trigger_domain AS trigger_domain,
-       w.enforced_action AS enforced_action, w.learned_from AS learned_from
+       coalesce(w.enforced_action, s0.action, '') AS enforced_action,
+       coalesce(w.learned_from, learnedId, '') AS learned_from
 ORDER BY id ASC
 """
 
+# `TARGETS` may point at a seed :ConceptNode or a contract :Entity — match any
+# node, and fall back to the agent id when `name` is absent.
 _HANDOFFS_CYPHER = """
 MATCH (h:Handoff)
 OPTIONAL MATCH (h)-[:FROM_AGENT]->(fa:Agent)
 OPTIONAL MATCH (h)-[:TO_AGENT]->(ta:Agent)
-OPTIONAL MATCH (h)-[:TARGETS]->(tg:ConceptNode)
-RETURN h.id AS id, fa.name AS source, ta.name AS target_agent,
-       tg.id AS target, h.status AS status
+OPTIONAL MATCH (h)-[:TARGETS]->(tg)
+WITH h, fa, ta, head(collect(DISTINCT tg.id)) AS targetId
+RETURN h.id AS id, coalesce(fa.name, fa.id, '') AS source,
+       coalesce(ta.name, ta.id, '') AS target_agent,
+       coalesce(targetId, '') AS target, h.status AS status
 ORDER BY id ASC
 """
 
@@ -77,6 +89,18 @@ def _text(value: Any, default: str = "") -> str:
     """Coerce an OPTIONAL property into a string for the cockpit shape."""
     if value is None:
         return default
+    return str(value)
+
+
+def _timestamp(value: Any) -> str:
+    """Render a MemoryService epoch as a readable string (seed strings pass through)."""
+    if value is None:
+        return ""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        try:
+            return datetime.fromtimestamp(float(value)).strftime("%Y-%m-%d %H:%M")
+        except (OverflowError, OSError, ValueError):
+            return str(value)
     return str(value)
 
 
@@ -128,7 +152,7 @@ def _read_episodes(graph: object) -> list[dict[str, str]]:
                 "session": _text(row[1]),
                 "prompt": _text(row[2]),
                 "summary": _text(row[3]),
-                "timestamp": _text(row[4]),
+                "timestamp": _timestamp(row[4]),
             }
         )
     return episodes

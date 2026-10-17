@@ -1,9 +1,8 @@
 // Domain types for the cockpit's graph data.
 //
-// These describe the shape returned by the data seam (`src/data`). Today the
-// seam is backed by the hard-coded seed in `./tenants`; when the cockpit is
-// wired to the Python backend (T4.2) only the seam implementation changes and
-// these types stay the same.
+// These describe the shape returned by the data seam (`src/data`). The seam is
+// backed by the Python backend / FalkorDB projection (T4.2 / D11); only the
+// seam implementation changes when the backing store changes.
 
 export interface ConceptNode {
   id: string;

@@ -1,11 +1,10 @@
 // The cockpit data seam.
 //
 // Every read/write of tenant graph data goes through this module. As of T4.2
-// (rule 3) it fetches from the Python backend over HTTP — the hard-coded seed
-// in `./tenants` is no longer used by the app. There is deliberately **no
-// fallback**: if FalkorDB is down the fetch rejects and the app shows the
-// ErrorScreen. `./tenants` is retained only as the canonical seed reference
-// (the backend port is `backend/scripts/seed_cockpit.py`).
+// (rule 3) it fetches from the Python backend over HTTP. There is deliberately
+// **no fallback**: if FalkorDB is down the fetch rejects and the app shows the
+// ErrorScreen. The canonical seed lives only in
+// `backend/scripts/seed_cockpit.py`; the old TypeScript duplicate is gone.
 import { loadTenants } from './remote';
 import type { Tenant, TenantMap } from './types';
 

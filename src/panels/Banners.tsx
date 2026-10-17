@@ -23,7 +23,14 @@ export default function Banners(props: any) {
           <span>
             <strong>{lastBuildBanner.usedGemini ? 'Gemini 3 Flash 4-Agent Synthesis' : '4-Agent Build'} Complete:</strong> Added{' '}
             <strong>{lastBuildBanner.nodeCount} linked nodes (L0→L5)</strong> for{' '}
-            <span className="text-white font-semibold">“{lastBuildBanner.prompt}”</span> into FalkorDB!{' '}
+            <span className="text-white font-semibold">“{lastBuildBanner.prompt}”</span>{' '}
+            {lastBuildBanner.persisted === false ? (
+              <span className="text-amber-300 font-semibold">
+                as a local preview (not written to FalkorDB).
+              </span>
+            ) : (
+              <>into FalkorDB!{' '}</>
+            )}{' '}
             {lastBuildBanner.protectedByPlaybook ? (
               <span className="text-emerald-300 font-semibold">
                 (Auto-protected by your learned :Playbook guardrail!)

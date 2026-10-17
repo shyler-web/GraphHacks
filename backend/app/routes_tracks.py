@@ -19,28 +19,47 @@ before they reach an engine (Track 01 inlines them into ``LIMIT``/``*..N``).
 
 from __future__ import annotations
 
+import os
 import pathlib
 import subprocess
 from dataclasses import asdict
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 
+from . import db
+from .errors import missing_artifact, service_error
 from .falkor_action import ActionEngine, DecisionTrace
 from .falkor_brain import FalkorBrain
 from .graph_sync import DEFAULT_REPO_ID, load_graph
+from .memory_service import MemoryService
+from .models import (
+    RecordHandoffInput,
+    SaveWorkflowInput,
+    WriteTurnInput,
+)
 from .observability import span
 
 router = APIRouter(prefix="/api", tags=["tracks"])
 
 REPO_ID = DEFAULT_REPO_ID
 
+# Cockpit relationship types the projection-write route may create. The type is
+# inlined into Cypher (FalkorDB cannot parameterise it), so it must be an
+# allow-list — never a client-supplied string.
+_CONCEPT_EDGE_TYPES = {"DEEPER_AT", "ENDANGERS", "LEARN_CONCEPT", "GOVERNS"}
+
 
 def _repo_root() -> pathlib.Path:
-    """Repo root via ``git rev-parse --show-toplevel``, with a safe fallback.
+    """Repo root from ``REPO_ROOT`` first, then git, then the source location.
 
-    ``backend/app/routes_tracks.py`` → parents[2] is the repo root, which is the
-    same directory git reports for this checkout.
+    The compose image mounts the repo at ``/repo`` (Dockerfile + compose), so the
+    environment override is what makes Track 01/03 sync work in-container where
+    there is no worktree behind ``git rev-parse``.
     """
+    env_root = os.environ.get("REPO_ROOT")
+    if env_root:
+        return pathlib.Path(env_root)
     try:
         proc = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -56,6 +75,14 @@ def _repo_root() -> pathlib.Path:
     return pathlib.Path(__file__).resolve().parents[2]
 
 
+def _graph_json_path() -> pathlib.Path:
+    """The Track 01/03 AST artifact; ``GRAPH_JSON_PATH`` wins for containers."""
+    env_path = os.environ.get("GRAPH_JSON_PATH")
+    if env_path:
+        return pathlib.Path(env_path)
+    return _repo_root() / "graphify-out" / "graph.json"
+
+
 def _clamp_int(value: object, lo: int, hi: int, default: int) -> int:
     """Coerce ``value`` to an int clamped into ``[lo, hi]`` (never interpolate raw)."""
     if value is None:
@@ -67,22 +94,19 @@ def _clamp_int(value: object, lo: int, hi: int, default: int) -> int:
     return max(lo, min(hi, parsed))
 
 
-def _unavailable(exc: Exception) -> HTTPException:
-    return HTTPException(
-        status_code=503,
-        detail=f"FalkorDB unavailable ({type(exc).__name__})",
-    )
-
-
 def _trace_dict(trace: DecisionTrace) -> dict[str, object]:
-    """The JSON-safe decision trace the UI renders (Cypher + timing + evidence)."""
+    """The JSON-safe decision trace the UI renders (Cypher + params + timing)."""
     return {
         "cypher": trace.cypher,
+        "params": trace.params,
         "node_ids": trace.node_ids,
         "elapsed_ms": trace.elapsed_ms,
         "graph": trace.graph,
         "row_count": trace.row_count,
         "edges": [edge.model_dump() for edge in trace.edges],
+        "hop_buckets": [
+            bucket.model_dump() for bucket in (trace.hop_buckets or [])
+        ],
     }
 
 
@@ -100,7 +124,7 @@ def track1_hotspots(limit: int = Query(10, ge=1, le=100)) -> dict[str, object]:
         with span("api.track1.hotspots"):
             result = engine.hotspots(REPO_ID, limit=top)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     return {"hotspots": result.data}
 
 
@@ -116,7 +140,7 @@ def track1_blast_radius(
         with span("api.track1.blast_radius"):
             result = engine.blast_radius(REPO_ID, symbol, max_hops=max_hops)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     trace = result.trace
     return {
         "symbol": symbol,
@@ -142,7 +166,7 @@ def track1_shortest_path(
         with span("api.track1.shortest_path"):
             result = engine.shortest_dep_path(REPO_ID, from_, to, max_len=length)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     data = result.data
     return {
         "from": from_,
@@ -155,13 +179,21 @@ def track1_shortest_path(
 
 @router.post("/track1/sync")
 def track1_sync() -> dict[str, object]:
-    """Idempotently load ``graphify-out/graph.json`` into ``code:graphhacks``."""
-    graph_path = _repo_root() / "graphify-out" / "graph.json"
+    """Replace ``code:graphhacks`` from ``graphify-out/graph.json`` (mark-and-sweep).
+
+    ``reset=True`` deletes the previous projection first, so code removed from
+    the AST graph cannot linger in FalkorDB.
+    """
+    graph_path = _graph_json_path()
+    if not graph_path.is_file():
+        raise missing_artifact(
+            f"AST graph missing: {graph_path} (run `graphify update .`)"
+        )
     try:
         with span("api.track1.sync"):
-            stats = load_graph(graph_path, REPO_ID)
+            stats = load_graph(graph_path, REPO_ID, reset=True)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     return stats.model_dump()
 
 
@@ -182,7 +214,7 @@ def track3_who_owns(
         with span("api.track3.who_owns"):
             owners = brain.who_owns(REPO_ID, target, limit=top)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     return {"owners": [asdict(owner) for owner in owners]}
 
 
@@ -194,7 +226,7 @@ def track3_trace(target: str = Query(..., min_length=1)) -> dict[str, object]:
         with span("api.track3.trace"):
             trace = brain.trace_why(target)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     return asdict(trace)
 
 
@@ -206,7 +238,7 @@ def track3_drift(since: int | None = Query(None, ge=0)) -> dict[str, object]:
         with span("api.track3.drift"):
             report = brain.detect_drift(REPO_ID, since_epoch=since)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     return asdict(report)
 
 
@@ -214,7 +246,15 @@ def track3_drift(since: int | None = Query(None, ge=0)) -> dict[str, object]:
 def track3_sync() -> dict[str, object]:
     """Ingest local commits + symbols + docs into ``company:brain`` (idempotent)."""
     root = _repo_root()
-    graph_json = root / "graphify-out" / "graph.json"
+    graph_json = _graph_json_path()
+    if not graph_json.is_file():
+        raise missing_artifact(
+            f"AST graph missing: {graph_json} (run `graphify update .`)"
+        )
+    if not (root / ".git").exists():
+        raise missing_artifact(
+            f"git history missing under {root} (mount .git or run outside Docker)"
+        )
     brain = FalkorBrain()
     try:
         with span("api.track3.sync"):
@@ -223,7 +263,7 @@ def track3_sync() -> dict[str, object]:
             symbols = brain.ingest_symbols(REPO_ID, graph_json)
             docs = brain.ingest_docs(REPO_ID, root)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
-        raise _unavailable(exc) from exc
+        raise service_error(exc) from exc
     return {
         "repo_id": REPO_ID,
         "people": commits.people,
@@ -232,4 +272,138 @@ def track3_sync() -> dict[str, object]:
         "symbols": symbols.symbols,
         "docs": docs.docs,
         "edges": commits.edges + docs.edges,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Track 02 — cockpit write path (:Turn / :Workflow / :Handoff, @tenant graph)
+#
+# The cockpit's senior-fix and feature-stack controls used to mutate React state
+# only. These routes are the write half of the data seam: every call goes through
+# `MemoryService`, then the cockpit reloads the projection from FalkorDB.
+# ---------------------------------------------------------------------------
+
+
+class Track2TurnRequest(BaseModel):
+    tenant: str = Field(..., min_length=1)
+    turn: WriteTurnInput
+
+
+class Track2WorkflowRequest(BaseModel):
+    tenant: str = Field(..., min_length=1)
+    workflow: SaveWorkflowInput
+
+
+class Track2HandoffRequest(BaseModel):
+    tenant: str = Field(..., min_length=1)
+    handoff: RecordHandoffInput
+
+
+class ConceptNodeInput(BaseModel):
+    """A cockpit projection node (D11) — snake_case matches `src/data/types.ts`."""
+
+    id: str = Field(..., min_length=1)
+    domain: str = ""
+    persona_level: int = 0
+    title: str = ""
+    summary: str = ""
+    vibe_translation: str = ""
+    code_or_math: str = ""
+    status: str = "OK"
+    created_by_agent: str = ""
+    x: float = 0
+    y: float = 0
+
+
+class ConceptEdgeInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    from_: str = Field(..., alias="from", min_length=1)
+    to: str = Field(..., min_length=1)
+    type: str = Field(..., min_length=1)
+
+
+class Track2GraphRequest(BaseModel):
+    tenant: str = Field(..., min_length=1)
+    nodes: list[ConceptNodeInput] = Field(default_factory=list)
+    edges: list[ConceptEdgeInput] = Field(default_factory=list)
+
+
+_CONCEPT_NODE_UPSERT = """
+MERGE (n:ConceptNode {id: $id})
+SET n.domain = $domain, n.persona_level = $persona_level, n.title = $title,
+    n.summary = $summary, n.vibe_translation = $vibe_translation,
+    n.code_or_math = $code_or_math, n.status = $status,
+    n.created_by_agent = $created_by_agent, n.x = $x, n.y = $y
+"""
+
+
+@router.post("/track2/turn")
+def track2_turn(body: Track2TurnRequest) -> dict[str, object]:
+    """Persist one episodic Turn (the cockpit Episode write)."""
+    memory = MemoryService()
+    try:
+        with span("api.track2.turn"):
+            turn = memory.write_turn(body.tenant, body.turn)
+    except Exception as exc:
+        raise service_error(exc) from exc
+    return turn.to_contract_dict()
+
+
+@router.post("/track2/workflow")
+def track2_workflow(body: Track2WorkflowRequest) -> dict[str, object]:
+    """Persist a Playbook as a real ``:Workflow`` + ordered ``:Step`` chain."""
+    memory = MemoryService()
+    try:
+        with span("api.track2.workflow"):
+            workflow = memory.save_workflow(body.tenant, body.workflow)
+    except Exception as exc:
+        raise service_error(exc) from exc
+    return workflow.to_contract_dict()
+
+
+@router.post("/track2/handoff")
+def track2_handoff(body: Track2HandoffRequest) -> dict[str, object]:
+    """Persist a coordination Handoff node + ``HANDED_TO`` edge."""
+    memory = MemoryService()
+    try:
+        with span("api.track2.handoff"):
+            handoff = memory.record_handoff(body.tenant, body.handoff)
+    except Exception as exc:
+        raise service_error(exc) from exc
+    return handoff.to_contract_dict()
+
+
+@router.post("/track2/graph")
+def track2_graph(body: Track2GraphRequest) -> dict[str, object]:
+    """Upsert cockpit ``:ConceptNode`` projection rows + typed edges.
+
+    This is the projection write that keeps newly built L0–L5 stacks and the
+    senior-fix status flips visible after the reload. Relationship types are an
+    allow-list because FalkorDB cannot parameterise them.
+    """
+    for edge in body.edges:
+        if edge.type not in _CONCEPT_EDGE_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"unsupported concept edge type: {edge.type}",
+            )
+    try:
+        with span("api.track2.graph"):
+            with db.tenant_graph(body.tenant) as graph:
+                for node in body.nodes:
+                    graph.query(_CONCEPT_NODE_UPSERT, params=node.model_dump())
+                for edge in body.edges:
+                    graph.query(
+                        f"MATCH (a:ConceptNode {{id: $from}}), "
+                        f"(b:ConceptNode {{id: $to}}) "
+                        f"MERGE (a)-[:{edge.type}]->(b)",
+                        params={"from": edge.from_, "to": edge.to},
+                    )
+    except Exception as exc:
+        raise service_error(exc) from exc
+    return {
+        "tenant": body.tenant,
+        "nodes": len(body.nodes),
+        "edges": len(body.edges),
     }

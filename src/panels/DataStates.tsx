@@ -28,16 +28,31 @@ export function ErrorScreen({
   message: string | null;
   onRetry: () => void;
 }) {
+  // Only a connection failure is a FalkorDB outage. A 409 means the graph is
+  // reachable but empty/unseeded (or an artifact is missing), and anything else
+  // is a backend error — don't blame the database for those.
+  const text = message ?? '';
+  const isConnection =
+    /unavailable|cannot reach|connection|refused|timed out/i.test(text);
+  const title = isConnection
+    ? 'FalkorDB is unavailable'
+    : /no tenants seeded|not seeded/i.test(text)
+    ? 'The graph has no tenants yet'
+    : 'The backend could not load the graph';
+  const hint = isConnection
+    ? 'Start FalkorDB (docker start falkordb) and retry.'
+    : /no tenants seeded|not seeded/i.test(text)
+    ? 'Run: cd backend && uv run python scripts/seed_cockpit.py — then retry.'
+    : 'Check the backend log, then retry. Missing files usually mean a sync/seed step was skipped.';
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center gap-5 px-6 font-sans">
       <div className="w-14 h-14 rounded-2xl bg-rose-500/15 border border-rose-500/40 flex items-center justify-center">
         <AlertTriangle className="w-7 h-7 text-rose-400" />
       </div>
       <div className="text-center max-w-lg">
-        <h1 className="text-lg font-bold text-white">FalkorDB is unavailable</h1>
+        <h1 className="text-lg font-bold text-white">{title}</h1>
         <p className="text-sm text-slate-400 mt-2">
-          The cockpit reads its graphs from FalkorDB through the Python backend. Start
-          FalkorDB (<code className="text-slate-200">docker start falkordb</code>) and retry.
+          The cockpit reads its graphs from FalkorDB through the Python backend. {hint}
         </p>
         <pre className="mt-3 text-xs font-mono text-rose-300 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 overflow-x-auto whitespace-pre-wrap">
           {message ?? 'Unknown error'}

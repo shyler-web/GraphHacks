@@ -42,4 +42,6 @@ export interface LastBuildBanner {
   protectedByPlaybook: boolean;
   nodeCount: number;
   usedGemini: boolean;
+  /** True only when the stack was written to FalkorDB (not a local preview). */
+  persisted?: boolean;
 }
