@@ -347,15 +347,28 @@ export default function App() {
       await new Promise((r) => setTimeout(r, 800));
     }
 
-    // Determine domain based on prompt keywords for fallback
+    // Determine the L0 domain from prompt keywords (fallback when the LLM is off).
     const lower = textToRun.toLowerCase();
-    const detectedDomain = lower.includes('stripe') || lower.includes('pay')
-      ? 'ExternalAPIs'
-      : lower.includes('auth') || lower.includes('login')
-      ? 'Security'
-      : lower.includes('db') || lower.includes('graph')
-      ? 'Database'
-      : 'AIModelsPrompts';
+    const domainSignals: [string, string[]][] = [
+      ['Security', ['auth', 'login', 'token', 'jwt', 'oauth', 'password', 'permission', 'rbac', 'encrypt', 'csrf', 'xss', 'vulnerab', 'secret']],
+      ['ExternalAPIs', ['stripe', 'payment', 'pay', 'checkout', 'billing', 'webhook', 'elevenlabs', 'openai', 'twilio', 'sendgrid', 'integration', 'sdk', 'third-party']],
+      ['Database', ['db', 'database', 'graph', 'cypher', 'falkordb', 'postgres', 'sql', 'query', 'index', 'schema', 'migration', 'cache', 'redis']],
+      ['InfraDevOps', ['deploy', 'docker', 'kubernetes', 'k8s', 'ci/cd', 'pipeline', 'infra', 'terraform', 'aws', 'monitoring', 'scaling', 'load balanc']],
+      ['TestingObservability', ['test', 'spec', 'lint', 'observability', 'logging', 'trace', 'metric', 'coverage']],
+      ['Frontend', ['ui', 'frontend', 'button', 'component', 'page', 'layout', 'css', 'tailwind', 'react', 'form', 'dashboard', 'canvas']],
+      ['Backend', ['backend', 'endpoint', 'route', 'server', 'handler', 'service', 'websocket', 'queue', 'worker', 'job']],
+      ['Mathematics', ['math', 'complexity', 'big-o', 'algorithm', 'graphblas', 'probability', 'queueing', 'linear algebra']],
+      ['Research', ['research', 'paper', 'benchmark', 'prior art', 'survey']],
+      ['BusinessCost', ['cost', 'pricing', 'subscription', 'revenue', 'margin', 'quota', 'business', 'plan']],
+      ['AIModelsPrompts', ['ai', 'llm', 'model', 'prompt', 'embedding', 'rag', 'voice', 'avatar', 'image', 'generat', 'agent', 'gpt', 'claude', 'chat']]
+    ];
+    let detectedDomain = 'AIModelsPrompts';
+    for (const [domain, keywords] of domainSignals) {
+      if (keywords.some((k) => lower.includes(k))) {
+        detectedDomain = domain;
+        break;
+      }
+    }
 
     const stackInput = {
       targetTenantKey,
