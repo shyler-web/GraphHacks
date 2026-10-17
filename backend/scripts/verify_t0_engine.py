@@ -35,10 +35,12 @@ def main() -> int:
     if count != 1:
         fail(f"named_graph count={count}")
 
+    # Idempotency must hold on re-runs: the FIRST call may create the index (0 if
+    # it already exists from a prior run), the SECOND must always be a no-op.
     created_first = db.ensure_indexes("verify:h0", [("Node", "id")])
     created_second = db.ensure_indexes("verify:h0", [("Node", "id")])
-    if created_first != 1:
-        fail(f"first ensure_indexes created={created_first} (expected 1)")
+    if created_first not in (0, 1):
+        fail(f"first ensure_indexes created={created_first} (expected 0 or 1)")
     if created_second != 0:
         fail(f"second ensure_indexes created={created_second} (expected 0, already indexed)")
 

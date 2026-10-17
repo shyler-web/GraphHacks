@@ -1,11 +1,31 @@
-import { Sparkles, Cpu, Play, RefreshCw, Check } from 'lucide-react';
+import { Sparkles, Cpu, Play, RefreshCw, Check, Database } from 'lucide-react';
 import { PERSONA_LEVELS } from '../graph/personaLevels';
+import { getFirstNodeId } from '../data';
 
 export default function ControlPanel(props: any) {
-  const { visibleNodes, currentTenant, maturityLevel, setMaturityLevel, promptInput, setPromptInput, useLiveGemini, setUseLiveGemini, isRunningAgents, agentStepText, handleRunMultiAgentPrompt } = props;
+  const { visibleNodes, currentTenant, maturityLevel, setMaturityLevel, promptInput, setPromptInput, useLiveGemini, setUseLiveGemini, isRunningAgents, agentStepText, handleRunMultiAgentPrompt, tenants, activeTenantKey, setActiveTenantKey, setSelectedNodeId } = props;
 
   return (
     <section className="bg-slate-900/50 border-b border-slate-800/80 px-4 py-3">
+      {/* Tenant switcher — switches which real FalkorDB `tenant:<id>` graph is shown (F4) */}
+      <div className="max-w-[1600px] mx-auto mb-3 flex items-center gap-2">
+        <Database className="w-4 h-4 text-pink-400" />
+        <span className="text-xs text-slate-400">FalkorDB tenant graph:</span>
+        <select
+          value={activeTenantKey}
+          onChange={(e) => {
+            setActiveTenantKey(e.target.value);
+            setSelectedNodeId(getFirstNodeId(tenants, e.target.value));
+          }}
+          className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white focus:outline-none cursor-pointer"
+        >
+          {Object.entries(tenants).map(([key, t]: [string, any]) => (
+            <option key={key} value={key} className="bg-slate-900 text-white">
+              {t.name} ({key})
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         {/* The 6-Level Dial */}
         <div className="flex-1">

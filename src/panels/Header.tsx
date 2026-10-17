@@ -1,4 +1,4 @@
-import { Network, Database, Terminal, BrainCircuit, Sliders } from 'lucide-react';
+import { Network, Database, Terminal, BrainCircuit, Sliders, Crosshair, Building2 } from 'lucide-react';
 import { getFirstNodeId } from '../data';
 
 export default function Header(props: any) {
@@ -68,6 +68,28 @@ export default function Header(props: any) {
             >
               <BrainCircuit className="w-3.5 h-3.5" />
               3-Tier Agent Memory ({currentTenant.episodes.length + currentTenant.playbooks.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('track01')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+                activeTab === 'track01'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              Track 01 · Action Studio
+            </button>
+            <button
+              onClick={() => setActiveTab('track03')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition flex items-center gap-1.5 ${
+                activeTab === 'track03'
+                  ? 'bg-indigo-600 text-white shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              Track 03 · Company Brain
             </button>
             <button
               onClick={() => setActiveTab('backend')}

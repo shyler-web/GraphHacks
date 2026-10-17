@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 # Opaque tenant identifier. Maps to the FalkorDB graph key `tenant:<tenantId>`.
@@ -204,3 +204,92 @@ class ReadHandoffsQuery(ContractModel):
     agent_id: str | None = None
     status: HandoffStatus | None = None
     limit: int | None = None
+
+
+# ---------------------------------------------------------------------------
+# Cockpit read models (F2/T4.1) — the exact JSON shape `src/data/types.ts`
+# expects. Deliberately snake_case (NOT the camelCase contract aliases): these
+# are the cockpit's field names (`persona_level`, `created_by_agent`, ...).
+# ---------------------------------------------------------------------------
+
+
+class ConceptNodeModel(BaseModel):
+    """Cockpit `ConceptNode` (see `src/data/types.ts`)."""
+
+    id: str
+    domain: str
+    persona_level: int
+    title: str
+    summary: str
+    vibe_translation: str
+    code_or_math: str
+    status: str
+    created_by_agent: str
+    x: float
+    y: float
+
+
+class ConceptEdgeModel(BaseModel):
+    """Cockpit `ConceptEdge`; `from` is a Python keyword, exposed via alias."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    from_: str = Field(alias="from")
+    to: str
+    type: str
+
+
+class EpisodeModel(BaseModel):
+    """Cockpit `Episode` (projected from `:Turn`/`:Session`)."""
+
+    id: str
+    session: str
+    prompt: str
+    summary: str
+    timestamp: str
+
+
+class PlaybookModel(BaseModel):
+    """Cockpit `Playbook` (projected from `:Workflow`)."""
+
+    id: str
+    rule_name: str
+    trigger_domain: str
+    enforced_action: str
+    learned_from: str
+
+
+class HandoffModel(BaseModel):
+    """Cockpit `Handoff` (projected from `:Handoff` + `FROM_AGENT`/`TO_AGENT`)."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    from_: str = Field(alias="from")
+    to: str
+    target: str
+    status: str
+
+
+class TenantSummary(BaseModel):
+    """One row of the tenant registry (`GET /api/tenants`)."""
+
+    key: str
+    name: str
+
+
+class TenantsResponse(BaseModel):
+    tenants: list[TenantSummary]
+
+
+class NodesResponse(BaseModel):
+    tenant: str
+    nodes: list[ConceptNodeModel]
+    episodes: list[EpisodeModel]
+    playbooks: list[PlaybookModel]
+    handoffs: list[HandoffModel]
+
+
+class EdgesResponse(BaseModel):
+    tenant: str
+    edges: list[ConceptEdgeModel]

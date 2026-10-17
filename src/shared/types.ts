@@ -1,5 +1,8 @@
 // UI-only types shared across the cockpit modules.
 
+/** The three track views the cockpit can render (F4). */
+export type TrackId = 'track02' | 'track01' | 'track03';
+
 export interface PersonaLevel {
   level: number;
   short: string;

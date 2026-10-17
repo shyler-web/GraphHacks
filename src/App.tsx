@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { getInitialTenants, DEFAULT_TENANT_KEY } from './data';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { loadTenants, DEFAULT_TENANT_KEY } from './data';
+import type { TenantMap } from './data';
 import { PERSONA_LEVELS } from './graph/personaLevels';
 import { getVisibleNodes, getBubbleUpRisks, getSelectedNode } from './graph/selectors';
 import { buildLiveCypherQuery } from './graph/cypher';
@@ -16,10 +17,17 @@ import NodeInspector from './panels/NodeInspector';
 import HandoffLedger from './panels/HandoffLedger';
 import MemoryTiers from './panels/MemoryTiers';
 import BackendTab from './panels/BackendTab';
+import Track01Studio from './panels/Track01Studio';
+import Track03Brain from './panels/Track03Brain';
+import { LoadingScreen, ErrorScreen } from './panels/DataStates';
+
+type LoadState = 'loading' | 'ready' | 'error';
 
 export default function App() {
   const [activeTenantKey, setActiveTenantKey] = useState(DEFAULT_TENANT_KEY);
-  const [tenants, setTenants] = useState(getInitialTenants);
+  const [tenants, setTenants] = useState<TenantMap>({});
+  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [maturityLevel, setMaturityLevel] = useState(0); // Default L0 Vibe Coder!
   const [selectedDomain, setSelectedDomain] = useState('ALL');
   const [selectedNodeId, setSelectedNodeId] = useState('node_vibe_avatar_l0');
@@ -46,6 +54,33 @@ export default function App() {
   const [compactNodes, setCompactNodes] = useState(false);
 
   const currentTenant = tenants[activeTenantKey];
+
+  // Load the real tenant graphs from FalkorDB (via the FastAPI backend). No
+  // fallback to seed data: a failure sets `loadState` to `error` (rule 3).
+  const load = useCallback(async () => {
+    setLoadState('loading');
+    setLoadError(null);
+    try {
+      const map = await loadTenants();
+      const keys = Object.keys(map);
+      if (keys.length === 0) {
+        throw new Error('FalkorDB returned no tenants (is the cockpit seeded?)');
+      }
+      setTenants(map);
+      const nextKey = map[activeTenantKey] ? activeTenantKey : keys[0];
+      setActiveTenantKey(nextKey);
+      setSelectedNodeId(map[nextKey]?.nodes[0]?.id ?? '');
+      setLoadState('ready');
+    } catch (err) {
+      setLoadError((err as Error).message || String(err));
+      setLoadState('error');
+    }
+    // Run once on mount; retry calls `load` explicitly with the current key.
+  }, [activeTenantKey]);
+
+  useEffect(() => {
+    void load();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Convert screen mouse/touch coordinates to SVG canvas coordinates
   const getSvgCoords = (clientX, clientY) => {
@@ -117,15 +152,18 @@ export default function App() {
 
   // Filter nodes based on the Builder Maturity Dial (L0 -> L5) and Domain filter
   const visibleNodes = useMemo(
-    () => getVisibleNodes(currentTenant, maturityLevel, selectedDomain),
+    () => (currentTenant ? getVisibleNodes(currentTenant, maturityLevel, selectedDomain) : []),
     [currentTenant, maturityLevel, selectedDomain]
   );
 
   // Identify any L4 CRITICAL risks that endanger L0 nodes (Bubble-Up Alerting!)
-  const bubbleUpRisks = useMemo(() => getBubbleUpRisks(currentTenant), [currentTenant]);
+  const bubbleUpRisks = useMemo(
+    () => (currentTenant ? getBubbleUpRisks(currentTenant) : {}),
+    [currentTenant]
+  );
 
   const selectedNode = useMemo(
-    () => getSelectedNode(currentTenant, selectedNodeId, visibleNodes),
+    () => (currentTenant ? getSelectedNode(currentTenant, selectedNodeId, visibleNodes) : undefined),
     [currentTenant, selectedNodeId, visibleNodes]
   );
 
@@ -281,6 +319,21 @@ export default function App() {
 
   const currentPersonaObj = PERSONA_LEVELS[maturityLevel];
 
+  // Gate every panel on a real backend read (F3 / rule 3). No seed fallback.
+  if (loadState === 'loading') {
+    return <LoadingScreen />;
+  }
+  if (loadState === 'error') {
+    return (
+      <ErrorScreen
+        message={loadError}
+        onRetry={() => {
+          void load();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
       {}
@@ -307,6 +360,10 @@ export default function App() {
         isRunningAgents={isRunningAgents}
         agentStepText={agentStepText}
         handleRunMultiAgentPrompt={handleRunMultiAgentPrompt}
+        tenants={tenants}
+        activeTenantKey={activeTenantKey}
+        setActiveTenantKey={setActiveTenantKey}
+        setSelectedNodeId={setSelectedNodeId}
       />
 
       {/* 17 DOMAIN LENS FILTER BAR */}
@@ -390,7 +447,24 @@ export default function App() {
           />
         )}
 
-        {}
+        {/* Track 01 — read-only action studio over the real tenant graph (F4) */}
+        {activeTab === 'track01' && (
+          <Track01Studio
+            currentTenant={currentTenant}
+            setSelectedNodeId={setSelectedNodeId}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
+        {/* Track 03 — read-only company brain over the real tenant graph (F4) */}
+        {activeTab === 'track03' && (
+          <Track03Brain
+            currentTenant={currentTenant}
+            setSelectedNodeId={setSelectedNodeId}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
         {activeTab === 'backend' && (
           <BackendTab />
         )}
