@@ -182,6 +182,22 @@ def track1_shortest_path(
     }
 
 
+@router.get("/track1/graph")
+def track1_graph(
+    repo: str = Query(REPO_ID, min_length=1),
+    limit: int = Query(40, ge=5, le=120),
+) -> dict[str, object]:
+    """A bounded 2D view of the repo's own code graph (top-PageRank symbols +
+    the CALLS/IMPORTS/CONTAINS/INHERITS edges among them) for the cockpit canvas."""
+    engine = ActionEngine(repo)
+    top = _clamp_int(limit, 5, 120, 40)
+    try:
+        with span("api.track1.graph"):
+            return engine.graph_view(repo, limit=top)
+    except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
+        raise service_error(exc) from exc
+
+
 @router.post("/track1/sync")
 def track1_sync() -> dict[str, object]:
     """Replace ``code:graphhacks`` from ``graphify-out/graph.json`` (mark-and-sweep).

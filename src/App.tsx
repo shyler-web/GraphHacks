@@ -30,6 +30,7 @@ import NodeInspector from './panels/NodeInspector';
 import HandoffLedger from './panels/HandoffLedger';
 import MemoryTiers from './panels/MemoryTiers';
 import BackendTab from './panels/BackendTab';
+import RepoGraphCanvas from './panels/RepoGraphCanvas';
 import Track01Studio from './panels/Track01Studio';
 import Track03Brain from './panels/Track03Brain';
 import { LoadingScreen, ErrorScreen } from './panels/DataStates';
@@ -45,6 +46,7 @@ export default function App() {
   const [selectedDomain, setSelectedDomain] = useState('ALL');
   const [selectedNodeId, setSelectedNodeId] = useState('node_vibe_avatar_l0');
   const [activeTab, setActiveTab] = useState('cockpit'); // 'cockpit' | 'memory' | 'backend'
+  const [cockpitLens, setCockpitLens] = useState<'memory' | 'repo'>('memory');
   const [promptInput, setPromptInput] = useState('');
   const [isRunningAgents, setIsRunningAgents] = useState(false);
   const [agentStepText, setAgentStepText] = useState('');
@@ -478,7 +480,32 @@ export default function App() {
           setLastBuildBanner={setLastBuildBanner}
         />
         {activeTab === 'cockpit' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full">
+          <>
+            <div className="mb-3 flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-slate-400">Cockpit lens:</span>
+              <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <button
+                  onClick={() => setCockpitLens('memory')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                    cockpitLens === 'memory' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Agent Memory (Track 02)
+                </button>
+                <button
+                  onClick={() => setCockpitLens('repo')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${
+                    cockpitLens === 'repo' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Repo Graph (code:{activeRepoId})
+                </button>
+              </div>
+            </div>
+            {cockpitLens === 'repo' ? (
+              <RepoGraphCanvas repo={activeRepoId} />
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-full">
             {/* Center-Left Interactive 2D FalkorDB Graph Canvas (7 cols) */}
             <GraphCanvas
               currentTenant={currentTenant}
@@ -530,6 +557,8 @@ export default function App() {
               />
             </div>
           </div>
+            )}
+          </>
         )}
 
         {}

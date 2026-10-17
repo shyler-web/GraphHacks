@@ -326,6 +326,39 @@ export async function syncTrack01(): Promise<Track01SyncStats> {
   return postJson<Track01SyncStats>('/api/track1/sync');
 }
 
+/** A bounded 2D view of the repo's own code graph (top-PageRank symbols). */
+export interface RepoGraphNode {
+  id: string;
+  label: string;
+  file: string;
+  is_test: boolean;
+  score: number;
+}
+
+export interface RepoGraphEdge {
+  source: string;
+  target: string;
+  type: string;
+}
+
+export interface RepoGraphView {
+  repo: string;
+  graph: string;
+  nodes: RepoGraphNode[];
+  edges: RepoGraphEdge[];
+  counts: { nodes: number; edges: number };
+  elapsed_ms: number;
+}
+
+export async function fetchTrack01Graph(
+  repo: string = DEFAULT_REPO_ID,
+  limit = 40
+): Promise<RepoGraphView> {
+  return getJson<RepoGraphView>(
+    `/api/track1/graph?repo=${encodeURIComponent(repo)}&limit=${limit}`
+  );
+}
+
 // -- Track 03 ---------------------------------------------------------------
 
 export interface Track03Owner {

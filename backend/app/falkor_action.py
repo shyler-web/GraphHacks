@@ -294,3 +294,62 @@ class ActionEngine:
         if not result.result_set:
             return ""
         return str(result.result_set[0][0])
+
+    def graph_view(self, repo_id: str, limit: int = 40) -> dict:
+        """A bounded 2D view of the repo's OWN code graph for the cockpit.
+
+        Returns the top-``limit`` symbols by CALLS-PageRank that have a real
+        ``source_file`` (the repo's own code — external import nodes are excluded),
+        plus the ``CALLS``/``IMPORTS``/``CONTAINS``/``INHERITS`` edges among them.
+        Bounded so the SVG canvas stays responsive on any repo.
+        """
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            raise ValueError("limit must be an int")
+        top = max(5, min(120, limit))
+        graph_key = db.repo_graph_key(repo_id)
+        cypher_nodes = (
+            "CALL algo.pageRank('Symbol','CALLS') YIELD node, score "
+            "WITH node, score "
+            "WHERE node.source_file IS NOT NULL AND node.source_file <> '' "
+            "RETURN node.id AS id, node.label AS label, node.source_file AS file, "
+            f"(node:Test) AS is_test, score ORDER BY score DESC LIMIT {top}"
+        )
+        cypher_edges = (
+            "MATCH (a:Symbol)-[r:CALLS|IMPORTS|CONTAINS|INHERITS]->(b:Symbol) "
+            "WHERE a.id IN $ids AND b.id IN $ids "
+            "RETURN a.id AS source, b.id AS target, type(r) AS type"
+        )
+
+        elapsed_ms = 0.0
+        with span("track1.graph_view"):
+            with db.named_graph(graph_key, self.config) as graph:
+                node_result, ms = self._query(graph, cypher_nodes, {})
+                elapsed_ms += ms
+                ids = [r[0] for r in node_result.result_set]
+                edge_rows: list[list] = []
+                if ids:
+                    edge_result, ms = self._query(graph, cypher_edges, {"ids": ids})
+                    elapsed_ms += ms
+                    edge_rows = list(edge_result.result_set)
+
+        nodes = [
+            {
+                "id": r[0],
+                "label": r[1] or r[0],
+                "file": r[2],
+                "is_test": bool(r[3]),
+                "score": float(r[4]),
+            }
+            for r in node_result.result_set
+        ]
+        edges = [
+            {"source": r[0], "target": r[1], "type": r[2]} for r in edge_rows
+        ]
+        return {
+            "repo": repo_id,
+            "graph": graph_key,
+            "nodes": nodes,
+            "edges": edges,
+            "counts": {"nodes": len(nodes), "edges": len(edges)},
+            "elapsed_ms": round(elapsed_ms, 3),
+        }
