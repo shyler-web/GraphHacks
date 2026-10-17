@@ -137,8 +137,8 @@ docker run -d --name falkordb -p 6379:6379 -p 3000:3000 falkordb/falkordb:latest
 # 2. Seed the tenant registry + tenant graphs (idempotent; needs FalkorDB only)
 cd backend && uv run python scripts/seed_cockpit.py
 
-# 3. FastAPI backend (from backend/)
-uv run uvicorn app.main:app --port 8000
+# 3. FastAPI backend (from backend/). `--env-file ../.env` loads Nebius/Tavily keys.
+uv run uvicorn app.main:app --port 8000 --env-file ../.env
 
 # 4. Cockpit (repo root, new terminal) → http://localhost:5173
 npm install && npm run dev
@@ -152,7 +152,7 @@ curl -s localhost:8000/api/tenants           # {"tenants":[{"key":"graphsync_use
 cd backend && uv run python health.py        # FalkorDB OK — MATCH (n) RETURN count(n) => N
 ```
 
-> Secrets (Nebius LLM, Tavily search, LangSmith) are **optional** for the demo and are read from the environment only. Copy `.env.example` → `.env`; never commit `.env`. Nothing above requires a key.
+> Secrets (Nebius LLM, Tavily search, LangSmith) are **optional** for the demo. Copy `.env.example` → `.env` (repo root) and fill in `NEBIUS_API_KEY` / `TAVILY_API_KEY`; the backend loads them via uvicorn `--env-file ../.env`. Never commit `.env`. Nothing above requires a key — with no keys the app still runs (deterministic fallback).
 
 ### Load any repo (paste a link)
 
