@@ -21,7 +21,7 @@ export default function Banners(props: any) {
         <div className="flex items-center gap-2 text-xs text-indigo-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>
-            <strong>{lastBuildBanner.usedGemini ? 'Gemini 3 Flash 4-Agent Synthesis' : '4-Agent Build'} Complete:</strong> Added{' '}
+            <strong>{lastBuildBanner.usedGemini ? 'Nebius 4-Agent Synthesis' : '4-Agent Build'} Complete:</strong> Added{' '}
             <strong>{lastBuildBanner.nodeCount} linked nodes (L0→L5)</strong> for{' '}
             <span className="text-white font-semibold">“{lastBuildBanner.prompt}”</span>{' '}
             {lastBuildBanner.persisted === false ? (

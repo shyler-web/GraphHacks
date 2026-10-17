@@ -14,7 +14,13 @@ import {
   addFeatureStackAndPersist
 } from './data/mutations';
 import { callGeminiWithBackoff } from './orchestration/gemini';
-import { buildCoachPayload, buildResearchPayload, buildFeaturePayload } from './orchestration/prompts';
+import { buildCoachPayload, buildFeaturePayload } from './orchestration/prompts';
+import {
+  fetchRepos,
+  loadRepo,
+  fetchResearch,
+  type RepoSummary
+} from './data/remote';
 import Header from './panels/Header';
 import ControlPanel from './panels/ControlPanel';
 import DomainFilterBar from './panels/DomainFilterBar';
@@ -54,6 +60,13 @@ export default function App() {
   const [groundingOutputs, setGroundingOutputs] = useState({});
   const [llmErrorBanner, setLlmErrorBanner] = useState(null);
 
+  // Active repo for Track 01/03 (D10). Defaults to the bundled `graphhacks`
+  // demo; pasting a GitHub URL loads a new one and switches here.
+  const [activeRepoId, setActiveRepoId] = useState('graphhacks');
+  const [repos, setRepos] = useState<RepoSummary[]>([]);
+  const [repoLoading, setRepoLoading] = useState(false);
+  const [repoError, setRepoError] = useState<string | null>(null);
+
   const svgRef = React.useRef(null);
   const [draggingNodeId, setDraggingNodeId] = useState(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -90,6 +103,31 @@ export default function App() {
   useEffect(() => {
     void load();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load the repo registry (best-effort: the demo repo `graphhacks` is always
+  // the default, so a missing `/api/repos` route must not block the cockpit).
+  useEffect(() => {
+    fetchRepos()
+      .then(setRepos)
+      .catch((err) => setRepoError((err as Error).message || String(err)));
+  }, []);
+
+  // Paste-a-GitHub-URL flow: load the repo, then re-read the registry and
+  // switch the active repo to the returned slug.
+  const handleLoadRepo = useCallback(async (url: string) => {
+    setRepoLoading(true);
+    setRepoError(null);
+    try {
+      const result = await loadRepo(url);
+      setActiveRepoId(result.repo_id);
+      const list = await fetchRepos();
+      setRepos(list);
+    } catch (err) {
+      setRepoError((err as Error).message || String(err));
+    } finally {
+      setRepoLoading(false);
+    }
+  }, []);
 
   // Convert screen mouse/touch coordinates to SVG canvas coordinates
   const getSvgCoords = (clientX, clientY) => {
@@ -224,7 +262,7 @@ export default function App() {
         }));
       }
     } catch (err) {
-      setLlmErrorBanner('Gemini Learning Coach encountered a temporary issue. Showing cached graph guidance.');
+      setLlmErrorBanner('Nebius Learning Coach encountered a temporary issue. Showing cached graph guidance.');
     } finally {
       setCoachLoading(false);
     }
@@ -236,27 +274,23 @@ export default function App() {
     setLlmErrorBanner(null);
 
     try {
-      const result = await callGeminiWithBackoff(buildResearchPayload(node));
+      const result = await fetchResearch(`${node.title} ${node.summary}`);
 
-      const candidate = result?.candidates?.[0];
-      const text = candidate?.content?.parts?.[0]?.text || 'No grounded summary returned.';
-      let sources = [];
-      const groundingMetadata = candidate?.groundingMetadata;
-      if (groundingMetadata?.groundingAttributions) {
-        sources = groundingMetadata.groundingAttributions
-          .map((attr) => ({
-            uri: attr.web?.uri,
-            title: attr.web?.title
-          }))
-          .filter((s) => s.uri && s.title);
-      }
+      const sources = (result.sources ?? [])
+        .map((s) => ({ uri: s.uri, title: s.title }))
+        .filter((s) => s.uri);
+      const text =
+        (result.sources ?? [])
+          .map((s) => `${s.title}${s.title && s.content ? ': ' : ''}${s.content}`.trim())
+          .filter(Boolean)
+          .join('\n\n') || 'No prior-art sources returned.';
 
       setGroundingOutputs((prev) => ({
         ...prev,
         [node.id]: { text, sources }
       }));
     } catch (err) {
-      setLlmErrorBanner('Google Search Grounding call failed or timed out. Please try again.');
+      setLlmErrorBanner('Tavily prior-art search failed or timed out. Please try again.');
     } finally {
       setGroundingLoading(false);
     }
@@ -290,16 +324,16 @@ export default function App() {
 
     if (useLiveGemini) {
       try {
-        setAgentStepText(`Gemini 3 Flash: Reading ${tenantSnapshot.playbooks.length} :Playbook rules & ${tenantSnapshot.episodes.length} :Episodes from FalkorDB...`);
+        setAgentStepText(`Nebius: Reading ${tenantSnapshot.playbooks.length} :Playbook rules & ${tenantSnapshot.episodes.length} :Episodes from FalkorDB...`);
 
-        setAgentStepText('Gemini 3 Flash: Synthesizing L0->L5 Semantic Nodes & Cypher contracts...');
+        setAgentStepText('Nebius: Synthesizing L0->L5 Semantic Nodes & Cypher contracts...');
         const result = await callGeminiWithBackoff(buildFeaturePayload(tenantSnapshot, textToRun, hasRateLimitPlaybook));
         const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (jsonText) {
           aiGeneratedSpec = JSON.parse(jsonText);
         }
       } catch (e) {
-        setLlmErrorBanner('Gemini API call fell back to deterministic graph synthesizer.');
+        setLlmErrorBanner('LLM call fell back to deterministic graph synthesizer.');
       }
     } else {
       setAgentStepText(`Agent 1–4: Simulating multi-agent graph build for "${textToRun}"...`);
@@ -399,6 +433,12 @@ export default function App() {
         activeTenantKey={activeTenantKey}
         setActiveTenantKey={setActiveTenantKey}
         setSelectedNodeId={setSelectedNodeId}
+        repos={repos}
+        activeRepoId={activeRepoId}
+        setActiveRepoId={setActiveRepoId}
+        repoLoading={repoLoading}
+        repoError={repoError}
+        onLoadRepo={handleLoadRepo}
       />
 
       {/* 17 DOMAIN LENS FILTER BAR */}
@@ -485,6 +525,7 @@ export default function App() {
         {/* Track 01 — read-only action studio over the real tenant graph (F4) */}
         {activeTab === 'track01' && (
           <Track01Studio
+            repo={activeRepoId}
             currentTenant={currentTenant}
             setSelectedNodeId={setSelectedNodeId}
             setActiveTab={setActiveTab}
@@ -494,6 +535,7 @@ export default function App() {
         {/* Track 03 — read-only company brain over the real tenant graph (F4) */}
         {activeTab === 'track03' && (
           <Track03Brain
+            repo={activeRepoId}
             currentTenant={currentTenant}
             setSelectedNodeId={setSelectedNodeId}
             setActiveTab={setActiveTab}

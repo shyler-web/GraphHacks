@@ -128,6 +128,100 @@ async function postJson<T>(url: string, body?: unknown): Promise<T> {
   return (await response.json()) as T;
 }
 
+// -- Repos (any-repo loading) ------------------------------------------------
+//
+// The cockpit can point Track 01/03 at any GitHub repo by pasting a URL. The
+// backend clones + graphifies it into a `code:<slug>` projection and ingests
+// it into `company:brain` (filtered by repo), then registers it; `repo` on the
+// Track 01/03 fetchers defaults to the bundled `graphhacks` demo repo so the
+// existing panels keep working before a load.
+
+/** The bundled demo repo the Track 01/03 engines read by default (D10). */
+export const DEFAULT_REPO_ID = 'graphhacks';
+
+export interface RepoSummary {
+  id: string;
+  name: string;
+  url: string;
+  loaded_at: number;
+}
+
+export interface RepoLoadResult {
+  repo_id: string;
+  name: string;
+  url: string;
+  files: number;
+  symbols: number;
+  nodes_total: number;
+  commits: number;
+  owners: number;
+}
+
+/** List repos already loaded into the backend (from `GET /api/repos`). */
+export async function fetchRepos(): Promise<RepoSummary[]> {
+  const payload = await getJson<{ repos: RepoSummary[] }>('/api/repos');
+  return payload.repos ?? [];
+}
+
+/** Clone + graphify a GitHub URL into a new repo (`POST /api/repos/load`). */
+export async function loadRepo(url: string): Promise<RepoLoadResult> {
+  return postJson<RepoLoadResult>('/api/repos/load', { url });
+}
+
+// -- Grounded guidance + research (Nebius / Tavily) --------------------------
+//
+// The L0→L5 guidance is now grounded in the active repo's graph facts
+// (`/api/guidance`) and the prior-art step cites real web sources
+// (`/api/research`, Tavily). Both go through the backend so no key ever ships
+// to the browser.
+
+export interface GuidanceFacts {
+  hotspots?: unknown[];
+  blast_radius?: unknown;
+  owners?: unknown[];
+  drift?: unknown;
+}
+
+export interface GuidanceTrace {
+  cypher?: string[];
+  elapsed_ms?: number;
+}
+
+export interface GuidanceResponse {
+  repo: string;
+  level: number;
+  answer: string;
+  facts: GuidanceFacts;
+  trace: GuidanceTrace;
+}
+
+export interface GuidanceRequest {
+  repo: string;
+  level: number;
+  symbol?: string;
+}
+
+/** Graph-grounded maturity guidance (Nebius over `/api/guidance`). */
+export async function fetchGuidance(body: GuidanceRequest): Promise<GuidanceResponse> {
+  return postJson<GuidanceResponse>('/api/guidance', body);
+}
+
+export interface ResearchSource {
+  uri: string;
+  title: string;
+  content: string;
+}
+
+export interface ResearchResponse {
+  query: string;
+  sources: ResearchSource[];
+}
+
+/** Web-grounded prior-art search (Tavily over `/api/research`). */
+export async function fetchResearch(query: string): Promise<ResearchResponse> {
+  return postJson<ResearchResponse>('/api/research', { query });
+}
+
 // -- Track 01 ---------------------------------------------------------------
 
 export interface Track01Hotspot {
@@ -184,10 +278,13 @@ export interface Track01SyncStats {
   elapsed_ms: number;
 }
 
-/** Top CALLS-PageRank symbols in `code:graphhacks`. */
-export async function fetchTrack01Hotspots(limit = 10): Promise<Track01Hotspot[]> {
+/** Top CALLS-PageRank symbols in `code:<repo>`. */
+export async function fetchTrack01Hotspots(
+  limit = 10,
+  repo: string = DEFAULT_REPO_ID
+): Promise<Track01Hotspot[]> {
   const payload = await getJson<{ hotspots: Track01Hotspot[] }>(
-    `/api/track1/hotspots?limit=${limit}`
+    `/api/track1/hotspots?repo=${encodeURIComponent(repo)}&limit=${limit}`
   );
   return payload.hotspots ?? [];
 }
@@ -195,10 +292,12 @@ export async function fetchTrack01Hotspots(limit = 10): Promise<Track01Hotspot[]
 /** Hop-bucketed blast radius of a symbol + its Cypher/ms trace. */
 export async function fetchTrack01BlastRadius(
   symbol: string,
-  hops = 3
+  hops = 3,
+  repo: string = DEFAULT_REPO_ID
 ): Promise<Track01BlastRadius> {
   return getJson<Track01BlastRadius>(
-    `/api/track1/blast-radius?symbol=${encodeURIComponent(symbol)}&hops=${hops}`
+    `/api/track1/blast-radius?repo=${encodeURIComponent(repo)}` +
+      `&symbol=${encodeURIComponent(symbol)}&hops=${hops}`
   );
 }
 
@@ -206,10 +305,12 @@ export async function fetchTrack01BlastRadius(
 export async function fetchTrack01ShortestPath(
   from: string,
   to: string,
-  maxLen = 6
+  maxLen = 6,
+  repo: string = DEFAULT_REPO_ID
 ): Promise<Track01ShortestPath> {
   return getJson<Track01ShortestPath>(
-    `/api/track1/shortest-path?from=${encodeURIComponent(from)}` +
+    `/api/track1/shortest-path?repo=${encodeURIComponent(repo)}` +
+      `&from=${encodeURIComponent(from)}` +
       `&to=${encodeURIComponent(to)}&max_len=${maxLen}`
   );
 }
@@ -277,10 +378,12 @@ export interface Track03SyncStats {
 /** People who modified the file(s) carrying a path or symbol. */
 export async function fetchTrack03WhoOwns(
   target: string,
-  limit = 5
+  limit = 5,
+  repo: string = DEFAULT_REPO_ID
 ): Promise<Track03Owner[]> {
   const payload = await getJson<{ owners: Track03Owner[] }>(
-    `/api/track3/who-owns?target=${encodeURIComponent(target)}&limit=${limit}`
+    `/api/track3/who-owns?repo=${encodeURIComponent(repo)}` +
+      `&target=${encodeURIComponent(target)}&limit=${limit}`
   );
   return payload.owners ?? [];
 }
@@ -291,8 +394,10 @@ export async function fetchTrack03Trace(target: string): Promise<Track03Trace> {
 }
 
 /** Spec drift (undocumented changes) + doc drift (removed symbols). */
-export async function fetchTrack03Drift(): Promise<Track03Drift> {
-  return getJson<Track03Drift>('/api/track3/drift');
+export async function fetchTrack03Drift(
+  repo: string = DEFAULT_REPO_ID
+): Promise<Track03Drift> {
+  return getJson<Track03Drift>(`/api/track3/drift?repo=${encodeURIComponent(repo)}`);
 }
 
 /** Idempotently re-ingest commits + symbols + docs into `company:brain`. */

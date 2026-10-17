@@ -1,9 +1,11 @@
-import { Sparkles, Cpu, Play, RefreshCw, Check, Database } from 'lucide-react';
+import { useState } from 'react';
+import { Sparkles, Cpu, Play, RefreshCw, Check, Database, Github } from 'lucide-react';
 import { PERSONA_LEVELS } from '../graph/personaLevels';
 import { getFirstNodeId } from '../data';
 
 export default function ControlPanel(props: any) {
-  const { visibleNodes, currentTenant, maturityLevel, setMaturityLevel, promptInput, setPromptInput, useLiveGemini, setUseLiveGemini, isRunningAgents, agentStepText, handleRunMultiAgentPrompt, tenants, activeTenantKey, setActiveTenantKey, setSelectedNodeId } = props;
+  const { visibleNodes, currentTenant, maturityLevel, setMaturityLevel, promptInput, setPromptInput, useLiveGemini, setUseLiveGemini, isRunningAgents, agentStepText, handleRunMultiAgentPrompt, tenants, activeTenantKey, setActiveTenantKey, setSelectedNodeId, repos, activeRepoId, setActiveRepoId, repoLoading, repoError, onLoadRepo } = props;
+  const [repoUrl, setRepoUrl] = useState('');
 
   return (
     <section className="bg-slate-900/50 border-b border-slate-800/80 px-4 py-3">
@@ -26,6 +28,62 @@ export default function ControlPanel(props: any) {
           ))}
         </select>
       </div>
+
+      {/* Repo picker — points Track 01/03 at any GitHub repo (any-repo loading) */}
+      <div className="max-w-[1600px] mx-auto mb-3 flex flex-wrap items-center gap-2">
+        <Github className="w-4 h-4 text-cyan-400" />
+        <span className="text-xs text-slate-400">Repo (Track 01/03):</span>
+        <select
+          value={activeRepoId}
+          onChange={(e) => setActiveRepoId(e.target.value)}
+          className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white focus:outline-none cursor-pointer"
+        >
+          {repos.map((r) => (
+            <option key={r.id} value={r.id} className="bg-slate-900 text-white">
+              {r.name} ({r.id})
+            </option>
+          ))}
+          {repos.length === 0 && (
+            <option value={activeRepoId} className="bg-slate-900 text-white">
+              {activeRepoId}
+            </option>
+          )}
+        </select>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const url = repoUrl.trim();
+            if (url) onLoadRepo(url);
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            type="text"
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+            placeholder="Paste a GitHub URL…"
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 w-64"
+          />
+          <button
+            type="submit"
+            disabled={repoLoading || !repoUrl.trim()}
+            className="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1.5"
+          >
+            {repoLoading ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Load
+          </button>
+        </form>
+        {repoError && (
+          <span className="text-[11px] text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg px-2 py-1">
+            {repoError}
+          </span>
+        )}
+      </div>
+
       <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         {/* The 6-Level Dial */}
         <div className="flex-1">
@@ -82,7 +140,7 @@ export default function ControlPanel(props: any) {
             <div className="text-[11px] font-medium text-slate-400 mb-1.5 flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-indigo-300 font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                Gemini 3 Flash 4-Agent Squad:
+                Nebius 4-Agent Squad:
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -94,7 +152,7 @@ export default function ControlPanel(props: any) {
                       : 'bg-slate-800 text-slate-400 border-slate-700'
                   }`}
                 >
-                  {useLiveGemini ? '✨ Live Gemini API: ON' : '⚡ Fast Sim: ON'}
+                  {useLiveGemini ? '✨ Live Nebius API: ON' : '⚡ Fast Sim: ON'}
                 </button>
                 <span className="text-[10px] text-emerald-400 font-mono">
                   {currentTenant.playbooks.length} :Playbooks
@@ -106,7 +164,7 @@ export default function ControlPanel(props: any) {
                 type="text"
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
-                placeholder="Ask Gemini Squad to build a feature (e.g., Add Stripe Checkout)..."
+                placeholder="Ask Nebius Squad to build a feature (e.g., Add Stripe Checkout)..."
                 className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
               />
               <button
@@ -130,7 +188,7 @@ export default function ControlPanel(props: any) {
             </div>
           ) : (
             <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-              <span>1-Click Gemini Prompts:</span>
+              <span>1-Click Nebius Prompts:</span>
               <div className="flex gap-1.5">
                 <button
                   type="button"

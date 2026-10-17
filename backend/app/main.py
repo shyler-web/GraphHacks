@@ -7,18 +7,15 @@ event loop. LangSmith tracing hooks in through ``app.observability.span`` (D3).
 
 from __future__ import annotations
 
-import json
-import os
-import urllib.error
-import urllib.request
-
 from fastapi import Body, FastAPI, HTTPException, Query
 
-from . import cockpit
+from . import cockpit, llm, search
 from .db import HEALTH_GRAPH, count_nodes
 from .errors import missing_artifact, service_error
+from .guidance import router as guidance_router
 from .models import EdgesResponse, NodesResponse, TenantsResponse
 from .observability import span
+from .repos import router as repos_router
 from .routes_tracks import router as tracks_router
 
 app = FastAPI(
@@ -29,6 +26,9 @@ app = FastAPI(
 
 # Track 01 (code:<repoId>) + Track 03 (company:brain) routes (D10).
 app.include_router(tracks_router)
+# Any-repo loading (D10 extension) + graph-grounded guidance (Option B).
+app.include_router(repos_router)
+app.include_router(guidance_router)
 
 
 @app.get("/")
@@ -102,42 +102,53 @@ def api_graph_edges(tenant: str = Query(..., min_length=1)) -> dict[str, object]
 
 
 # ---------------------------------------------------------------------------
-# Server-side Gemini proxy (minor 14). The browser bundle never contains an API
-# key: this route reads `GEMINI_API_KEY` from the backend environment only.
+# Provider-agnostic LLM proxy (Nebius Token Factory). The browser bundle never
+# contains a key: this route reads `NEBIUS_API_KEY` from the backend environment
+# only. It accepts the legacy Gemini payload shape and answers in the same
+# shape, so the frontend's `src/orchestration/gemini.ts` works unchanged.
 # ---------------------------------------------------------------------------
 
 
 @app.post("/api/gemini/generate")
 def gemini_generate(payload: dict = Body(...)) -> object:
-    """Proxy a generateContent call without shipping a key to the client."""
-    key = os.environ.get("GEMINI_API_KEY")
-    if not key:
+    """Translate the Gemini-format payload to a Nebius chat completion and
+    return a Gemini-shaped response (``candidates[0].content.parts[0].text``)."""
+    if not llm.is_configured():
         raise HTTPException(
             status_code=503,
-            detail="GEMINI_API_KEY is not configured on the backend (server-side only)",
+            detail="NEBIUS_API_KEY is not configured on the backend (server-side only)",
         )
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent?key={key}"
-    )
-    request = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")[:500]
-        raise HTTPException(
-            status_code=502,
-            detail=f"Gemini upstream error {exc.code}: {detail}",
-        ) from exc
-    except Exception as exc:  # network/timeout/parse
-        raise HTTPException(
-            status_code=502,
-            detail=f"Gemini request failed ({type(exc).__name__})",
-        ) from exc
+        sys_parts = (payload.get("systemInstruction") or {}).get("parts") or [{}]
+        system_text = " ".join(p.get("text", "") for p in sys_parts if isinstance(p, dict))
+        contents = (payload.get("contents") or [{}])[0]
+        user_parts = contents.get("parts") or [{}]
+        user_text = " ".join(p.get("text", "") for p in user_parts if isinstance(p, dict))
+    except (KeyError, IndexError, AttributeError):
+        raise HTTPException(status_code=400, detail="malformed LLM payload")
+
+    generation = payload.get("generationConfig") or {}
+    json_mode = generation.get("responseMimeType") == "application/json"
+    try:
+        text = llm.chat_completion(system_text, user_text, json_mode=json_mode)
+    except llm.LLMUnavailable as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return {"candidates": [{"content": {"parts": [{"text": text}]}}]}
+
+
+@app.post("/api/research")
+def research(payload: dict = Body(...)) -> object:
+    """Web-grounded prior-art search via Tavily (replaces Gemini google_search).
+
+    Returns cited sources (``uri``/``title``/``content``) so the L4/L5 "prior
+    art" step is verifiable. A missing key is a 503 (the UI degrades).
+    """
+    query = str(payload.get("query", "")).strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query is required")
+    try:
+        sources = search.search(query)
+    except search.SearchUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"query": query, "sources": sources}

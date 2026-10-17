@@ -173,13 +173,13 @@ export function addFeatureStack(
       vibe_translation:
         l0Ai?.vibe_translation ||
         (hasRateLimitPlaybook
-          ? `Auto-Protected by Gemini + Playbook Memory! Built "${textToRun}" with a 5-click/min shield automatically.`
+          ? `Auto-Protected by Nebius + Playbook Memory! Built "${textToRun}" with a 5-click/min shield automatically.`
           : `Careful! "${textToRun}" calls a paid external API without a rate limit yet. Click Apply Senior Fix below!`),
       code_or_math:
         l0Ai?.code_or_math ||
         `// L0 Vibe View for: ${textToRun}\n// Status: ${hasRateLimitPlaybook ? 'Protected by Procedural Memory (:Playbook)' : 'Awaiting Senior Guardrail'}`,
       status: hasRateLimitPlaybook ? 'FIXED' : 'WARNING',
-      created_by_agent: aiGeneratedSpec ? 'Gemini-VibeArchitect' : 'VibeArchitectAgent',
+      created_by_agent: aiGeneratedSpec ? 'Nebius-VibeArchitect' : 'VibeArchitectAgent',
       x: baseX,
       y: 65
     },
@@ -192,7 +192,7 @@ export function addFeatureStack(
       vibe_translation: l1Ai?.vibe_translation || 'Costs 1.5 cents per run. Capped at 10 free runs per user.',
       code_or_math: l1Ai?.code_or_math || 'Cost_Per_1k_Calls = $15.00 | Free_Tier_Quota = 10/day',
       status: 'OK',
-      created_by_agent: aiGeneratedSpec ? 'Gemini-VibeArchitect' : 'VibeArchitectAgent',
+      created_by_agent: aiGeneratedSpec ? 'Nebius-VibeArchitect' : 'VibeArchitectAgent',
       x: Math.min(baseX + 55, 730),
       y: 130
     },
@@ -205,7 +205,7 @@ export function addFeatureStack(
       vibe_translation: l2Ai?.vibe_translation || 'Connects the frontend button to our Python backend route.',
       code_or_math: l2Ai?.code_or_math || `FeatureButton.tsx ──POST──> /api/feature_${ts.toString().slice(-3)} ──MERGE──> (:ConceptNode)`,
       status: 'OK',
-      created_by_agent: aiGeneratedSpec ? 'Gemini-FullStackBuilder' : 'FullStackBuilderAgent',
+      created_by_agent: aiGeneratedSpec ? 'Nebius-FullStackBuilder' : 'FullStackBuilderAgent',
       x: baseX,
       y: 195
     },
@@ -226,7 +226,7 @@ export function addFeatureStack(
           ? `@router.post("/api/feature-${ts.toString().slice(-3)}")\n@enforced_playbook("rule_rate_limit_all_ai")\nasync def run_feature(req: Request):\n    await redis_guard.check(req.client.host, limit=5, window=60)\n    return await execute_service("${textToRun}")`
           : `@router.post("/api/feature-${ts.toString().slice(-3)}")\nasync def run_feature(req: Request):\n    # WARNING: Unthrottled external API call\n    return await execute_service("${textToRun}")`),
       status: hasRateLimitPlaybook ? 'FIXED' : 'OK',
-      created_by_agent: aiGeneratedSpec ? 'Gemini-FullStackBuilder' : 'FullStackBuilderAgent',
+      created_by_agent: aiGeneratedSpec ? 'Nebius-FullStackBuilder' : 'FullStackBuilderAgent',
       x: Math.min(baseX + 65, 730),
       y: 260
     },
@@ -251,7 +251,7 @@ export function addFeatureStack(
           : 'Needs 1-Click Senior Fix to prevent API spend drain!'),
       code_or_math: l4Ai?.code_or_math || 'MATCH (p:Playbook)-[:GOVERNS]->(n:ConceptNode) RETURN p.enforced_action',
       status: hasRateLimitPlaybook ? 'FIXED' : 'CRITICAL',
-      created_by_agent: aiGeneratedSpec ? 'Gemini-SeniorAuditor' : 'SeniorAuditorAgent',
+      created_by_agent: aiGeneratedSpec ? 'Nebius-SeniorAuditor' : 'SeniorAuditorAgent',
       x: baseX,
       y: 325
     },
@@ -264,7 +264,7 @@ export function addFeatureStack(
       vibe_translation: l5Ai?.vibe_translation || 'Mathematical proof that this feature scales under heavy traffic.',
       code_or_math: l5Ai?.code_or_math || 'L = λ · W | Subgraph Query: O(|V_slice| + |E_slice|)',
       status: 'OK',
-      created_by_agent: aiGeneratedSpec ? 'Gemini-PrincipalAuditor' : 'SeniorAuditorAgent',
+      created_by_agent: aiGeneratedSpec ? 'Nebius-PrincipalAuditor' : 'SeniorAuditorAgent',
       x: Math.min(baseX + 55, 730),
       y: 390
     }
@@ -281,7 +281,7 @@ export function addFeatureStack(
 
   const newEpisode = {
     id: `ep_${ts.toString().slice(-3)}`,
-    session: aiGeneratedSpec ? 'Live Gemini 3 Flash Session' : 'Live Prompt Session',
+    session: aiGeneratedSpec ? 'Live Nebius Session' : 'Live Prompt Session',
     prompt: textToRun,
     summary:
       aiGeneratedSpec?.episodeSummary ||
@@ -319,7 +319,7 @@ export function addFeatureStack(
         handoffs: [
           {
             id: `h_${ts}`,
-            from: hasRateLimitPlaybook ? 'PlaybookMemory -> GeminiBuilder' : 'GeminiArchitect (L0-L1)',
+            from: hasRateLimitPlaybook ? 'PlaybookMemory -> NebiusBuilder' : 'NebiusArchitect (L0-L1)',
             to: hasRateLimitPlaybook ? 'SeniorAuditor (Verified)' : 'SeniorAuditor (L4 Alert)',
             target: newL0Id,
             status: hasRateLimitPlaybook ? 'PLAYBOOK_ENFORCED' : 'ALERT_RAISED'

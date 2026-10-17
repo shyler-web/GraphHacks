@@ -29,8 +29,8 @@ Rail-map: `graphify-out/GRAPH_REPORT.md`. Interactive view: `graphify-out/graph.
 | Memory | **FalkorDB** (Docker) | one named graph per tenant |
 | Backend + agents | **Python** (FastAPI) | official `falkordb` Python client (D8) |
 | Frontend | **React + Vite + TS** | the existing cockpit, modularized (D9) |
-| LLM | **Gemini** | extraction + reasoning |
-| Tools | **Tavily** | web-search tool the agent calls; available as MCP |
+| LLM | **Nebius Token Factory** (OpenAI-compatible) | extraction + reasoning + graph-grounded guidance (D12) |
+| Tools | **Tavily** | web-search grounding (research/prior-art) + MCP |
 | Tool protocol | **MCP** | FalkorDB graph tools + Tavily |
 | Observability | **LangSmith** | trace every LLM + tool call |
 | Orchestration | **hand-rolled** state machine | persisted in FalkorDB |

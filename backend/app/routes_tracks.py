@@ -116,13 +116,16 @@ def _trace_dict(trace: DecisionTrace) -> dict[str, object]:
 
 
 @router.get("/track1/hotspots")
-def track1_hotspots(limit: int = Query(10, ge=1, le=100)) -> dict[str, object]:
+def track1_hotspots(
+    limit: int = Query(10, ge=1, le=100),
+    repo: str = Query(REPO_ID, min_length=1),
+) -> dict[str, object]:
     """Top CALLS-PageRank symbols. ``limit`` is clamped to the engine's 1..10."""
-    engine = ActionEngine(REPO_ID)
+    engine = ActionEngine(repo)
     top = _clamp_int(limit, 1, 10, 10)
     try:
         with span("api.track1.hotspots"):
-            result = engine.hotspots(REPO_ID, limit=top)
+            result = engine.hotspots(repo, limit=top)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
         raise service_error(exc) from exc
     return {"hotspots": result.data}
@@ -132,13 +135,14 @@ def track1_hotspots(limit: int = Query(10, ge=1, le=100)) -> dict[str, object]:
 def track1_blast_radius(
     symbol: str = Query(..., min_length=1),
     hops: int = Query(3, ge=1, le=10),
+    repo: str = Query(REPO_ID, min_length=1),
 ) -> dict[str, object]:
     """Affected symbols (hop buckets) that transitively CALL ``symbol``."""
-    engine = ActionEngine(REPO_ID)
+    engine = ActionEngine(repo)
     max_hops = _clamp_int(hops, 1, 10, 3)
     try:
         with span("api.track1.blast_radius"):
-            result = engine.blast_radius(REPO_ID, symbol, max_hops=max_hops)
+            result = engine.blast_radius(repo, symbol, max_hops=max_hops)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
         raise service_error(exc) from exc
     trace = result.trace
@@ -158,13 +162,14 @@ def track1_shortest_path(
     from_: str = Query(..., alias="from", min_length=1),
     to: str = Query(..., min_length=1),
     max_len: int = Query(6, ge=1, le=10),
+    repo: str = Query(REPO_ID, min_length=1),
 ) -> dict[str, object]:
     """Shortest directed CALLS path from ``from`` to ``to``."""
-    engine = ActionEngine(REPO_ID)
+    engine = ActionEngine(repo)
     length = _clamp_int(max_len, 1, 10, 6)
     try:
         with span("api.track1.shortest_path"):
-            result = engine.shortest_dep_path(REPO_ID, from_, to, max_len=length)
+            result = engine.shortest_dep_path(repo, from_, to, max_len=length)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
         raise service_error(exc) from exc
     data = result.data
@@ -206,13 +211,14 @@ def track1_sync() -> dict[str, object]:
 def track3_who_owns(
     target: str = Query(..., min_length=1),
     limit: int = Query(5, ge=1, le=100),
+    repo: str = Query(REPO_ID, min_length=1),
 ) -> dict[str, object]:
     """People who modified the file(s) carrying ``target`` (path or symbol)."""
     brain = FalkorBrain()
     top = _clamp_int(limit, 1, 100, 5)
     try:
         with span("api.track3.who_owns"):
-            owners = brain.who_owns(REPO_ID, target, limit=top)
+            owners = brain.who_owns(repo, target, limit=top)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
         raise service_error(exc) from exc
     return {"owners": [asdict(owner) for owner in owners]}
@@ -231,12 +237,15 @@ def track3_trace(target: str = Query(..., min_length=1)) -> dict[str, object]:
 
 
 @router.get("/track3/drift")
-def track3_drift(since: int | None = Query(None, ge=0)) -> dict[str, object]:
+def track3_drift(
+    since: int | None = Query(None, ge=0),
+    repo: str = Query(REPO_ID, min_length=1),
+) -> dict[str, object]:
     """Spec drift (undocumented changes) + doc drift (removed symbols)."""
     brain = FalkorBrain()
     try:
         with span("api.track3.drift"):
-            report = brain.detect_drift(REPO_ID, since_epoch=since)
+            report = brain.detect_drift(repo, since_epoch=since)
     except Exception as exc:  # pragma: no cover - exercised by stopping FalkorDB
         raise service_error(exc) from exc
     return asdict(report)

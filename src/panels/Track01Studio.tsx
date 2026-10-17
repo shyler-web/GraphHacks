@@ -15,7 +15,9 @@ import {
  * Nothing here is derived from the tenant graph (F4 superseded): stopping
  * FalkorDB breaks this panel (rule 3).
  */
-export default function Track01Studio(_props: any) {
+export default function Track01Studio(props: any) {
+  const { repo = 'graphhacks' } = props;
+
   const [hotspots, setHotspots] = useState<Track01Hotspot[]>([]);
   const [symbol, setSymbol] = useState('');
   const [hops, setHops] = useState(2);
@@ -31,20 +33,20 @@ export default function Track01Studio(_props: any) {
     setBlasting(true);
     setError(null);
     try {
-      setBlast(await fetchTrack01BlastRadius(target, depth));
+      setBlast(await fetchTrack01BlastRadius(target, depth, repo));
     } catch (err) {
       setBlast(null);
       setError((err as Error).message || String(err));
     } finally {
       setBlasting(false);
     }
-  }, []);
+  }, [repo]);
 
   const loadHotspots = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const rows = await fetchTrack01Hotspots(8);
+      const rows = await fetchTrack01Hotspots(8, repo);
       setHotspots(rows);
       const first = rows[0]?.id ?? '';
       setSymbol(first);
@@ -54,13 +56,13 @@ export default function Track01Studio(_props: any) {
     } finally {
       setLoading(false);
     }
-  }, [runBlast, hops]);
+  }, [runBlast, hops, repo]);
 
   useEffect(() => {
     void loadHotspots();
-    // Load once on mount.
+    // Load once on mount and re-run when the active repo changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [repo]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -89,7 +91,7 @@ export default function Track01Studio(_props: any) {
               <Crosshair className="w-4 h-4 text-cyan-400" />
               Track 01 · Connected-Data Action Engine
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                code:graphhacks
+                code:{repo}
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-1.5">

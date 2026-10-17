@@ -84,7 +84,7 @@ export default function NodeInspector(props: any) {
               ) : (
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               )}
-              ✨ Ask Gemini Coach (Explain at L{maturityLevel})
+              ✨ Ask Nebius Coach (Explain at L{maturityLevel})
             </button>
 
             <button
@@ -98,15 +98,15 @@ export default function NodeInspector(props: any) {
               ) : (
                 <Search className="w-3.5 h-3.5 text-cyan-300" />
               )}
-              🌐 Grounded Prior Art (Google Search)
+              🌐 Tavily Prior Art
             </button>
           </div>
 
-          {/* Gemini Level-Calibrated Learning Coach Output */}
+          {/* Nebius Level-Calibrated Learning Coach Output */}
           {coachOutputs[`${selectedNode.id}_L${maturityLevel}`] && (
             <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/40 space-y-2 text-xs">
               <div className="font-bold text-amber-300 flex items-center justify-between">
-                <span>🎓 Gemini Learning Bridge (Calibrated for L{maturityLevel} {currentPersonaObj.name})</span>
+                <span>🎓 Nebius Learning Bridge (Calibrated for L{maturityLevel} {currentPersonaObj.name})</span>
                 <span className="text-[10px] font-mono text-amber-400/80">Lens #4: Learning</span>
               </div>
               <p className="text-slate-200">
@@ -127,7 +127,7 @@ export default function NodeInspector(props: any) {
             </div>
           )}
 
-          {/* Gemini Google Search Grounding Output */}
+          {/* Tavily Prior-Art Grounding Output */}
           {groundingOutputs[selectedNode.id] && (
             <div className="p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/40 space-y-2 text-xs">
               <div className="font-bold text-cyan-300 flex items-center justify-between">

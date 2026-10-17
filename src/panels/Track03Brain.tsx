@@ -10,9 +10,9 @@ import {
   type Track03Trace
 } from '../data/remote';
 
-// Preset question the panel answers from the real `company:brain` graph.
-const OWNER_TARGET = 'docs/decisions.md';
-const TRACE_TARGET = 'docs/contracts/memory-service.md';
+// Preset path the panel answers from the real `company:brain` graph. A single
+// text input (below) overrides this for both who-owns and trace.
+const DEFAULT_TARGET = 'docs/decisions.md';
 
 function formatEpoch(seconds: number | null | undefined): string {
   if (!seconds) return '—';
@@ -25,7 +25,10 @@ function formatEpoch(seconds: number | null | undefined): string {
  * drift report. Every row comes from FalkorDB; nothing is derived from the
  * tenant graph (F4 superseded). Stop FalkorDB → this panel errors (rule 3).
  */
-export default function Track03Brain(_props: any) {
+export default function Track03Brain(props: any) {
+  const { repo = 'graphhacks' } = props;
+
+  const [target, setTarget] = useState(DEFAULT_TARGET);
   const [owners, setOwners] = useState<Track03Owner[]>([]);
   const [trace, setTrace] = useState<Track03Trace | null>(null);
   const [drift, setDrift] = useState<Track03Drift | null>(null);
@@ -39,9 +42,9 @@ export default function Track03Brain(_props: any) {
     setError(null);
     try {
       const [nextOwners, nextTrace, nextDrift] = await Promise.all([
-        fetchTrack03WhoOwns(OWNER_TARGET),
-        fetchTrack03Trace(TRACE_TARGET),
-        fetchTrack03Drift()
+        fetchTrack03WhoOwns(target, 5, repo),
+        fetchTrack03Trace(target),
+        fetchTrack03Drift(repo)
       ]);
       setOwners(nextOwners);
       setTrace(nextTrace);
@@ -51,11 +54,14 @@ export default function Track03Brain(_props: any) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [repo, target]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+    // Run once on mount and when the active repo changes; a target edit is
+    // applied explicitly via the "Run" button (not on every keystroke).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repo]);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -101,6 +107,26 @@ export default function Track03Brain(_props: any) {
             {syncing ? 'Syncing…' : 'Sync data'}
           </button>
         </div>
+        <div className="mt-3 flex items-center gap-2">
+          <label className="text-[11px] font-mono text-slate-400 shrink-0">target</label>
+          <input
+            type="text"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void load();
+            }}
+            placeholder="file path or symbol, e.g. docs/decisions.md"
+            className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+          />
+          <button
+            onClick={() => void load()}
+            disabled={loading}
+            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold shrink-0"
+          >
+            {loading ? '…' : 'Run'}
+          </button>
+        </div>
         {syncNote && (
           <div className="mt-2 text-[11px] font-mono text-emerald-300">{syncNote}</div>
         )}
@@ -118,7 +144,7 @@ export default function Track03Brain(_props: any) {
             Who owns it {loading ? '· loading…' : `(${owners.length})`}
           </h3>
           <div className="text-[11px] font-mono text-slate-500 mb-3">
-            who-owns?target={OWNER_TARGET}
+            who-owns?repo={repo}&amp;target={target}
           </div>
           <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             {owners.map((owner) => (
@@ -156,7 +182,7 @@ export default function Track03Brain(_props: any) {
             Why it exists {trace ? `· ${trace.kind}` : ''}
           </h3>
           <div className="text-[11px] font-mono text-slate-500 mb-2 truncate">
-            trace?target={TRACE_TARGET}
+            trace?target={target}
           </div>
           {trace && (
             <div className="text-[11px] font-mono text-slate-400 mb-2 truncate">

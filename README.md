@@ -152,7 +152,20 @@ curl -s localhost:8000/api/tenants           # {"tenants":[{"key":"graphsync_use
 cd backend && uv run python health.py        # FalkorDB OK — MATCH (n) RETURN count(n) => N
 ```
 
-> Secrets (Gemini, Tavily, LangSmith) are **optional** for the demo and are read from the environment only. Copy `.env.example` → `.env`; never commit `.env`. Nothing above requires a key.
+> Secrets (Nebius LLM, Tavily search, LangSmith) are **optional** for the demo and are read from the environment only. Copy `.env.example` → `.env`; never commit `.env`. Nothing above requires a key.
+
+### Load any repo (paste a link)
+
+```bash
+curl -s -X POST localhost:8000/api/repos/load -H 'Content-Type: application/json' \
+  -d '{"url":"https://github.com/pallets/click"}'
+# → {"repo_id":"click","name":"click","files":...,"symbols":...,...}
+curl -s "localhost:8000/api/track1/hotspots?repo=click&limit=5"      # hotspots for that repo
+curl -s -X POST localhost:8000/api/guidance -H 'Content-Type: application/json' \
+  -d '{"repo":"click","level":4}'                                     # graph-grounded L4 audit
+```
+
+The cockpit exposes the same flow via the repo bar (paste URL → load → pick repo). Guidance needs `NEBIUS_API_KEY` for the LLM text; without it the endpoint still returns the graph facts (hotspots/blast-radius/owners/drift) that the answer is grounded in.
 
 ### Option B — Docker Compose (one command, D4)
 
