@@ -176,10 +176,15 @@ export async function loadRepo(url: string): Promise<RepoLoadResult> {
 // to the browser.
 
 export interface GuidanceFacts {
-  hotspots?: unknown[];
-  blast_radius?: unknown;
-  owners?: unknown[];
-  drift?: unknown;
+  hotspots?: { id: string; label: string; file: string; score: number }[];
+  blast_radius?: {
+    symbol: string | null;
+    max_hops: number;
+    affected_count: number;
+    affected: unknown[];
+  };
+  owners?: { person_id: string; name: string; commits: number }[];
+  drift?: { spec_drift: number; doc_drift: number };
 }
 
 export interface GuidanceTrace {
@@ -190,9 +195,10 @@ export interface GuidanceTrace {
 export interface GuidanceResponse {
   repo: string;
   level: number;
-  answer: string;
+  answer: string | null;
   facts: GuidanceFacts;
   trace: GuidanceTrace;
+  note?: string;
 }
 
 export interface GuidanceRequest {

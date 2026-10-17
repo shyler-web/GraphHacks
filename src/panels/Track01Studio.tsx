@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Crosshair, GitBranch, Play, RefreshCw, Table2 } from 'lucide-react';
+import { Crosshair, GitBranch, Play, RefreshCw, Sparkles, Table2 } from 'lucide-react';
+import { PERSONA_LEVELS } from '../graph/personaLevels';
 import {
+  fetchGuidance,
   fetchTrack01BlastRadius,
   fetchTrack01Hotspots,
   syncTrack01,
+  type GuidanceResponse,
   type Track01BlastRadius,
   type Track01Hotspot
 } from '../data/remote';
@@ -27,6 +30,9 @@ export default function Track01Studio(props: any) {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncNote, setSyncNote] = useState<string | null>(null);
+  const [guidance, setGuidance] = useState<GuidanceResponse | null>(null);
+  const [guidanceLoading, setGuidanceLoading] = useState(false);
+  const [guidanceLevel, setGuidanceLevel] = useState(3);
 
   const runBlast = useCallback(async (target: string, depth: number) => {
     if (!target) return;
@@ -81,6 +87,20 @@ export default function Track01Studio(props: any) {
       setSyncing(false);
     }
   };
+
+  const runGuidance = useCallback(async () => {
+    setGuidanceLoading(true);
+    setError(null);
+    try {
+      setGuidance(
+        await fetchGuidance({ repo, level: guidanceLevel, symbol: symbol || undefined })
+      );
+    } catch (err) {
+      setError((err as Error).message || String(err));
+    } finally {
+      setGuidanceLoading(false);
+    }
+  }, [repo, guidanceLevel, symbol]);
 
   return (
     <div className="space-y-4">
@@ -242,6 +262,68 @@ export default function Track01Studio(props: any) {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="bg-slate-900/70 border border-indigo-500/30 rounded-2xl p-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2 mb-3">
+          <Sparkles className="w-4 h-4 text-indigo-400" />
+          Graph-Grounded Guidance (Nebius)
+          <span className="text-[10px] normal-case font-mono text-slate-500">
+            grounded in code:{repo}
+          </span>
+        </h3>
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <label className="text-[11px] text-slate-400">maturity level</label>
+          <select
+            value={guidanceLevel}
+            onChange={(e) => setGuidanceLevel(Number(e.target.value))}
+            className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white focus:outline-none"
+          >
+            {PERSONA_LEVELS.map((p) => (
+              <option key={p.level} value={p.level} className="bg-slate-900">
+                {p.short} · {p.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => void runGuidance()}
+            disabled={guidanceLoading}
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {guidanceLoading ? 'Generating…' : `Explain ${repo} at L${guidanceLevel}`}
+          </button>
+        </div>
+
+        {guidance && (
+          <div className="space-y-3">
+            {guidance.answer ? (
+              <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap bg-slate-950 border border-slate-800 rounded-lg p-3">
+                {guidance.answer}
+              </p>
+            ) : (
+              <div className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2 py-1.5">
+                {guidance.note ?? 'LLM unavailable — graph facts shown below.'}
+              </div>
+            )}
+            <div className="text-[11px] font-mono text-slate-400 flex flex-wrap gap-3">
+              <span>
+                hotspots <strong className="text-cyan-300">{guidance.facts.hotspots?.length ?? 0}</strong>
+              </span>
+              <span>
+                blast radius <strong className="text-amber-300">{guidance.facts.blast_radius?.affected_count ?? 0}</strong>
+              </span>
+              <span>
+                owners <strong className="text-emerald-300">{guidance.facts.owners?.length ?? 0}</strong>
+              </span>
+              <span>
+                drift <strong className="text-rose-300">{guidance.facts.drift?.spec_drift ?? 0}</strong> spec /{' '}
+                <strong className="text-rose-300">{guidance.facts.drift?.doc_drift ?? 0}</strong> doc
+              </span>
+              <span className="text-slate-500">· {guidance.trace.elapsed_ms} ms query</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {blast && blast.trace.edges.length > 0 && (

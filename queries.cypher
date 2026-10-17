@@ -423,3 +423,27 @@ MATCH (d:Doc)-[:MENTIONS]->(s:Symbol)
 WHERE s.present = false AND ($repo = '' OR s.repo = $repo)
 RETURN 'removed-symbol' AS kind, s.id AS id, s.name AS path_or_name,
        collect(DISTINCT d.path) AS docPaths;
+
+
+// #############################################################################
+// ## ANY-REPO LOADING + GRAPH-GROUNDED GUIDANCE  (D12 / Option B)
+// #############################################################################
+
+// --- repo registry (named graph: graphhacks_repos) ---------------------------
+// POST /api/repos/load registers a freshly cloned + graphified repo.
+MERGE (r:Repo {id: $id}) SET r.name = $name, r.url = $url, r.loaded_at = $loadedAt;
+
+// GET /api/repos — list loaded repos, newest first.
+MATCH (r:Repo)
+RETURN r.id AS id, r.name AS name, r.url AS url, r.loaded_at AS loaded_at
+ORDER BY r.loaded_at DESC;
+
+// --- graph-grounded guidance (POST /api/guidance) ----------------------------
+// The LLM answer is grounded in FOUR facts, each a query already listed above:
+//   hotspots      = algo.pageRank over code:<repo>          (Track 01, B2)
+//   blast_radius  = <-[:CALLS*1..3]- hop buckets            (Track 01, B2)
+//   who_owns      = :AUTHORED/:MODIFIED aggregation          (Track 03, C5)
+//   drift         = spec_drift D1/D2 + doc_drift D3          (Track 03, C7)
+// These facts are serialized into the Nebius prompt (app/guidance.py), so the
+// LLM cannot produce the answer without FalkorDB — rule 3 strengthened: the
+// graph is load-bearing for the LLM too, not just the UI.

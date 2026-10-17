@@ -1,7 +1,7 @@
 # Demo script — GraphHacks Nexus (3 minutes, click-by-click)
 
 **Track entered:** 02 — Agent Memory and Coordination (with real, thin Track 01 / Track 03 entries on the same FalkorDB engine).
-**Setup before recording:** start Docker, run Option A or B from the README, seed once, and leave the cockpit open at `http://localhost:5173`. Keep two terminals visible: one for `docker`, one for `uv run` scripts. Have FalkorDB Browser (`http://localhost:3000`) open in a third tab for the graph-view beat.
+**Setup before recording:** start Docker, run Option A or B from the README, seed once, and leave the cockpit open at `http://localhost:5173`. Copy `.env.example` → `.env` and set `NEBIUS_API_KEY` + `TAVILY_API_KEY` (needed for the guidance + research beats; the rest runs keyless). Keep two terminals visible: one for `docker`, one for `uv run` scripts. Have FalkorDB Browser (`http://localhost:3000`) open in a third tab for the graph-view beat.
 
 > **Golden rule for the recording:** the graph must do the work. Never read a value off a slide that you could show coming out of FalkorDB. The one moment that matters most is step 2 — **stop the database and watch the app break**.
 
@@ -93,7 +93,7 @@ Say: *"This is this repo's own AST graph loaded into `code:graphhacks`. Blast ra
 
 ---
 
-## 2:30–2:55 · Track 03 — who owns it, and why
+## 2:25–2:45 · Track 03 — who owns it, and why
 
 **Click:** terminal (from `backend/`):
 
@@ -113,11 +113,30 @@ Say: *"`company:brain` is built from local git history, the docs on disk, and th
 
 ---
 
-## 2:55–3:00 · Wrap
+## 2:45–3:00 · Any repo (paste a link) + graph-grounded guidance
+
+**Click:** in the cockpit, the **repo bar** (Control Panel) → paste `https://github.com/pallets/click` → **Load**. Say: *"This is the any-repo story. Paste a GitHub URL and the backend clones it, builds its AST graph with graphify, and loads it into a new `code:<repoId>` projection — then Track 01 and Track 03 point at it. It just loaded `click`'s 2,654 symbols into FalkorDB."*
+
+**Click:** header tab **Track 01 · Action Studio** → pick the `click` repo from the dropdown → show the hotspots change to `click`'s symbols.
+
+**Click:** the **Graph-Grounded Guidance (Nebius)** card → pick **L4 · Senior Staff Engineer** → click **Explain click at L4**.
+
+**Show** the answer names `click`'s actual most-called function (from PageRank) — then say: *"That answer is grounded in four FalkorDB queries: hotspots, blast radius, who-owns, and drift. The LLM cannot say any of that without the graph — stop FalkorDB and the guidance degrades to facts-only. So the graph is load-bearing for the LLM too, not just the UI."*
+
+**Optional (5 s):**
+
+```bash
+curl -s -X POST localhost:8000/api/guidance -H 'Content-Type: application/json' \
+  -d '{"repo":"click","level":4}'
+```
+
+---
+
+## 3:00–3:10 · Wrap
 
 **Click:** back to **2D Graph Cockpit**.
 
-Say: *"One FalkorDB instance, three named graphs, one cockpit. Stop the database and everything you just saw breaks — that's the proof the graph is doing the real work. Track 02 is the anchor: episodic, semantic, procedural memory and multi-agent handoffs in one connected graph. Tracks 01 and 03 reuse the same engine on the same data. Queries are in `queries.cypher`; the data model is in the README."*
+Say: *"One FalkorDB instance, three named graphs, one cockpit. Stop the database and everything you just saw breaks — that's the proof the graph is doing the real work. Track 02 is the anchor: episodic, semantic, procedural memory and multi-agent handoffs in one connected graph. Tracks 01 and 03 reuse the same engine on the same data. And any repo can be pasted in as a link and explained at your level — with the LLM grounded in the same graph. Queries are in `queries.cypher`; the data model is in the README."*
 
 ---
 
@@ -131,6 +150,8 @@ Say: *"One FalkorDB instance, three named graphs, one cockpit. Stop the database
 | Escalation | handoff ledger | `… → SeniorAuditor` with `ALERT_RAISED` |
 | Track 01 | `uv run python scripts/verify_track1.py` | `TRACK1 OK`, hop1/hop2 blast radius |
 | Track 03 | `uv run python scripts/verify_track3.py` | `track3 OK … cited=100%` |
+| Any repo | repo bar → paste URL → Load → pick repo | hotspots switch to the new repo's symbols |
+| Guidance | Guidance card → L4 → Explain | grounded answer naming a real PageRank hotspot |
 | Real graph | FalkorDB Browser `:3000` (optional B-roll) | the same nodes live |
 
 **If something fails on camera:** do not improvise around it. Show the error, check `nc -z localhost 6379` / `docker ps`, and restart FalkorDB — an honest recovery is stronger than a fake pass, and rule 12 expects you to explain what happened.
