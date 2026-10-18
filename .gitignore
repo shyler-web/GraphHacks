@@ -48,3 +48,6 @@ assets/diagrams/
 
 # archify working scratch
 .archify/
+
+# vercel CLI local project link
+.vercel/

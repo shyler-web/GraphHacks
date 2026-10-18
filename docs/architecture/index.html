@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GraphHacks Nexus — Architecture Diagrams (C4)</title>
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: #0f172a;
+      --panel-hover: #1e293b;
+      --border: #1e293b;
+      --border-hover: #4f46e5;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #818cf8;
+      --accent2: #22d3ee;
+      --pink: #f472b6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(1200px 600px at 50% -10%, #1e1b4b 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+    }
+    header { text-align: center; max-width: 760px; }
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(129,140,248,.15);
+      color: var(--accent);
+      border: 1px solid rgba(129,140,248,.35);
+      margin-bottom: 18px;
+    }
+    h1 { font-size: clamp(26px, 4vw, 40px); margin: 0 0 12px; letter-spacing: -0.02em; }
+    p.lede { color: var(--muted); font-size: 16px; line-height: 1.6; margin: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      width: 100%;
+      max-width: 1020px;
+      margin-top: 40px;
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-hover);
+      background: var(--panel-hover);
+    }
+    .k {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      color: var(--accent2);
+      text-transform: uppercase;
+    }
+    .card h2 { font-size: 19px; margin: 10px 0 8px; }
+    .card p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
+    .go { margin-top: 16px; font-size: 14px; color: var(--accent); font-weight: 600; }
+    footer { margin-top: 44px; color: var(--muted); font-size: 13px; text-align: center; }
+    footer a { color: var(--accent); text-decoration: none; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .92em;
+      color: var(--pink);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="badge">FalkorDB · Track 02 — Agent Memory &amp; Coordination</span>
+    <h1>GraphHacks Nexus — Architecture</h1>
+    <p class="lede">
+      Interactive C4 architecture diagrams for GraphHacks Nexus: a FalkorDB-backed
+      Builder-Maturity cockpit where one graph holds the <code>tenant:*</code>,
+      <code>code:*</code>, and <code>company:brain</code> projections. Click a level to explore.
+    </p>
+  </header>
+
+  <main class="grid">
+    <a class="card" href="./nexus-context.html">
+      <span class="k">C4 · Level 1</span>
+      <h2>System Context</h2>
+      <p>Who uses GraphHacks Nexus and the external systems it talks to — cockpit, backend, FalkorDB, and providers.</p>
+      <div class="go">Open diagram →</div>
+    </a>
+    <a class="card" href="./nexus-container.html">
+      <span class="k">C4 · Level 2</span>
+      <h2>Containers</h2>
+      <p>The runtime containers: React cockpit, FastAPI backend, FalkorDB, graphify, MCP, Nebius, Tavily, LangSmith.</p>
+      <div class="go">Open diagram →</div>
+    </a>
+    <a class="card" href="./nexus-component.html">
+      <span class="k">C4 · Level 3</span>
+      <h2>Backend Components</h2>
+      <p>The three engines, the <code>db.named_graph</code> router, and the named graphs they read and write.</p>
+      <div class="go">Open diagram →</div>
+    </a>
+  </main>
+
+  <footer>
+    Source: <a href="https://github.com/shyler-web/GraphHacks">github.com/shyler-web/GraphHacks</a> ·
+    diagrams generated with Archify
+  </footer>
+</body>
+</html>
