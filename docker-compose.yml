@@ -18,6 +18,11 @@ services:
     build:
       context: .                 # repo root: bake graphify-out/graph.json
       dockerfile: backend/Dockerfile
+    # Optional: load Nebius/Tavily/LangSmith keys from a root `.env` if present.
+    # `required: false` keeps the keyless path working when there is no `.env`.
+    env_file:
+      - path: .env
+        required: false
     environment:
       FALKORDB_HOST: falkordb
       FALKORDB_PORT: "6379"

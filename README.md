@@ -168,6 +168,16 @@ One FalkorDB instance holds all multi-tenant and multi-track projections via `db
 - **Docker & Docker Compose** (for FalkorDB and containerized execution)
 - **Node.js 18+** & **npm** (for local frontend dev)
 - **Python 3.12+** & [**uv**](https://docs.astral.sh/uv/) (for local backend dev)
+- **Git** (to clone the repo)
+- *(Optional)* **`graphify`** CLI — needed only for the "load any GitHub repo" feature: `uv tool install graphifyy`. Everything else runs without it.
+
+### 0. Get the code
+```bash
+git clone https://github.com/shyler-web/GraphHacks.git
+cd GraphHacks
+```
+
+---
 
 ---
 
@@ -202,8 +212,9 @@ One FalkorDB instance holds all multi-tenant and multi-track projections via `db
    ```bash
    cd backend
    uv run python scripts/seed_cockpit.py
-   uv run uvicorn app.main:app --port 8000 --env-file ../.env
+   uv run uvicorn app.main:app --port 8000
    ```
+   > Runs **keyless** (no `.env` needed). To enable the optional LLM/search features, first `cp .env.example .env` in the repo root, fill in the keys, and add `--env-file ../.env` to the `uvicorn` command. Note: pass `--env-file ../.env` **only after** `.env` exists — uvicorn exits with `Invalid value for '--env-file': Path '../.env' does not exist` if the file is missing.
 
 3. **Set up & Start Frontend** (from repository root):
    ```bash
@@ -226,6 +237,12 @@ cp .env.example .env
 | `NEBIUS_API_KEY` | Live LLM agent squad synthesis & `/api/guidance` | Deterministic synthesizer used; guidance returns graph facts |
 | `TAVILY_API_KEY` | Live cited web research for L4/L5 agents | Endpoint returns 503; UI degrades gracefully |
 | `LANGSMITH_API_KEY` | Distributed tracing for all Cypher and LLM calls | Observability operations are silent no-ops |
+
+How keys reach the backend:
+- **Option B (native):** pass `--env-file ../.env` to `uvicorn` (after `cp .env.example .env`). Without the flag the backend simply runs keyless.
+- **Option A (Compose):** the `backend` service reads `.env` automatically if present (`env_file` with `required: false`); absent, it runs keyless.
+
+> **"Load any repo" needs the `graphify` CLI.** `POST /api/repos/load` (the cockpit's *paste a GitHub URL* bar) shells out to `git` + `graphify`. If `graphify` is not on `PATH`, it returns a clean `HTTP 409 {"detail":"graphify unavailable: …"}` and the UI shows an error banner — it never crashes. Install it with `uv tool install graphifyy` to enable that feature. All three tracks work on the bundled `graphhacks` repo without it.
 
 ---
 
