@@ -187,7 +187,7 @@ cd GraphHacks
    ```bash
    docker compose up --build
    ```
-   *Starts FalkorDB on `6379` & `3000`, FastAPI backend on `8000`, and React Cockpit on `5173`.*
+   *Starts FalkorDB on `6379` & `3000`, the FastAPI backend (internal to the Compose network), and the React Cockpit on `5173`. The cockpit proxies `/api` to the backend, so `:5173` is the only URL you need.*
 
 2. **Seed the database (in a separate terminal)**:
    ```bash
