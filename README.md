@@ -13,6 +13,7 @@
 
 ## 📹 Submission Artifacts & Quick Links
 
+- **Demo Video:** [https://youtu.be/pP5ok3QK8us](https://youtu.be/pP5ok3QK8us)
 - **Interactive Architecture Diagrams (C4 Level):**
   - [System Context Diagram](https://graphhacks-nexus-architecture.vercel.app/nexus-context.html)
   - [Container Architecture Diagram](https://graphhacks-nexus-architecture.vercel.app/nexus-container.html)
