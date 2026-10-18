@@ -72,30 +72,55 @@ The graph model compositions live inside isolated FalkorDB named graphs (`tenant
 ```mermaid
 flowchart TD
     subgraph Coordination["Coordination Tier"]
-        A1[":Agent (VibeArchitect)"] -->|"HANDED_TO {at}"| A2[":Agent (FullStackBuilder)"]
-        A2 -->|"HANDED_TO {at}"| A3[":Agent (SeniorAuditor)"]
-        H[":Handoff {status: ALERT_RAISED}"] -->|"FROM_AGENT"| A2
-        H -->|"TO_AGENT"| A3
+        A0[":Agent (VibeArchitect)"]
+        A1[":Agent (FullStackBuilder)"]
+        A2[":Agent (SeniorAuditor)"]
+        H[":Handoff (ALERT_RAISED)"]
+        A0 -->|"HANDED_TO {at}"| A1
+        A1 -->|"HANDED_TO {at}"| A2
+        H -->|"FROM_AGENT"| A1
+        H -->|"TO_AGENT"| A2
     end
 
     subgraph Episodic["Episodic Memory Tier"]
-        S[":Session"] <--|"IN_SESSION"| T[":Turn"]
-        A1 -->|"PRODUCED"| T
+        U[":User"]
+        S[":Session"]
+        T[":Turn"]
+        TP[":Topic"]
+        U -->|"PARTICIPATED"| T
+        A0 -->|"PRODUCED"| T
+        T -->|"IN_SESSION"| S
+        T -->|"ABOUT"| TP
     end
 
     subgraph Semantic["Semantic Memory Tier"]
-        T -->|"MODIFIED {op}"| C1[":ConceptNode (L0 Vibe Feature)"]
-        C1 -->|"DEEPER_AT"| C2[":ConceptNode (L3 Python Code)"]
-        C3[":ConceptNode (L4 Security Risk)"] -->|"ENDANGERS"| C1
-        H -->|"TARGETS"| C3
+        E[":Entity"]
+        F[":Fact"]
+        C0[":ConceptNode (L0 Vibe)"]
+        C3[":ConceptNode (L3 Code)"]
+        C4[":ConceptNode (L4 Risk)"]
+        T -->|"MENTIONS"| E
+        E -->|"HAS_FACT"| F
+        F -->|"DERIVED_FROM"| T
+        C0 -->|"DEEPER_AT"| C3
+        C4 -->|"ENDANGERS"| C0
     end
 
     subgraph Procedural["Procedural Memory Tier"]
-        W[":Workflow (:Playbook)"] -->|"LEARNED_FROM"| H
-        W -->|"START"| ST1[":Step 1"] -->|"NEXT_STEP"| ST2[":Step 2"]
-        W -->|"GOVERNS"| C2
+        W[":Workflow (Playbook)"]
+        ST1[":Step 1"]
+        ST2[":Step 2"]
+        W -->|"START"| ST1
+        ST1 -->|"NEXT_STEP"| ST2
+        W -->|"LEARNED_FROM"| H
+        A2 -->|"EXECUTED {at}"| W
+        W -->|"GOVERNS"| C3
     end
+
+    H -->|"TARGETS"| C4
 ```
+
+> Reads as: a `:User`/`:Agent` produces an episodic `:Turn` (in a `:Session`, about a `:Topic`); the turn mentions semantic `:Entity`/`:Fact` nodes and links the L0→L5 `:ConceptNode` projection; a SeniorAuditor flags an L4 risk that `[:ENDANGERS]` the L0 card, and the fix is stored as a replayable `:Workflow` linked back to the `:Handoff` via `[:LEARNED_FROM]`.
 
 ### 3.1 The Four Memory & Coordination Tiers
 
@@ -132,6 +157,7 @@ One FalkorDB instance holds all multi-tenant and multi-track projections via `db
 | **`code:<repoId>`** | Track 01 Code Graph | Full AST symbol graph (`:File`, `:Symbol`, `:Test`, `[:CALLS]`, `[:IMPORTS]`) |
 | **`company:brain`** | Track 03 Company Brain | Git commits, authors, file ownership, documentation drift |
 | **`graphhacks_registry`** | Global Registry | Tenant workspaces (`:Tenant {key, name}`) |
+| **`graphhacks_repos`** | Repo Registry | Repos loaded via "paste a GitHub URL" (`:Repo {id, name, url, loaded_at}`) |
 | **`graphhacks_health`** | Health Monitor | Dedicated heartbeat graph (`MATCH (n) RETURN count(n)`) |
 
 ---
