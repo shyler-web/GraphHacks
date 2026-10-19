@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building GraphHacks Nexus: Giving Multi-Agent AI a Real Memory on FalkorDB</title>
+<meta name="author" content="Kanhaiya">
+<meta name="description" content="How I turned a simulated agent cockpit into a load-bearing FalkorDB system — and why the graph is the product.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Building GraphHacks Nexus: Giving Multi-Agent AI a Real Memory on FalkorDB">
+<meta property="og:description" content="How I turned a simulated agent cockpit into a load-bearing FalkorDB system — and why the graph is the product.">
+<style>
+  body { margin:0; background:#fff; color:#242424; font-family: Georgia, Cambria, "Times New Roman", serif; }
+  article { max-width: 680px; margin: 0 auto; padding: 56px 20px 96px; }
+  h1 { font-family: -apple-system, Segoe UI, Roboto, sans-serif; font-size: 40px; line-height:1.2; letter-spacing:-0.02em; margin:0 0 12px; }
+  .subtitle { font-size: 22px; color:#6b6b6b; font-family:-apple-system,Segoe UI,Roboto,sans-serif; margin:0 0 32px; }
+  h2 { font-family:-apple-system,Segoe UI,Roboto,sans-serif; font-size:28px; margin:44px 0 12px; letter-spacing:-0.01em; }
+  h3 { font-family:-apple-system,Segoe UI,Roboto,sans-serif; font-size:21px; margin:32px 0 8px; }
+  p, li { font-size: 20px; line-height: 1.6; }
+  a { color:#1a8917; }
+  pre { background:#f7f7f7; border-radius:6px; padding:16px; overflow:auto; font-family: ui-monospace, Menlo, monospace; font-size:15px; line-height:1.5; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size:0.86em; background:#f2f2f2; padding:2px 5px; border-radius:3px; }
+  pre code { background:none; padding:0; }
+  blockquote { border-left:3px solid #242424; margin:24px 0; padding-left:20px; font-style:italic; color:#4a4a4a; }
+  ul { padding-left: 26px; }
+</style>
+</head>
+<body>
+<article>
+<h1>Building GraphHacks Nexus: Giving Multi-Agent AI a Real Memory on FalkorDB</h1>
+<p class="subtitle">How I turned a simulated agent cockpit into a load-bearing FalkorDB system — and why the graph is the product.</p>
+
+<h2>AI agents don't have a memory problem. They have a graph problem.</h2>
+<p>Every multi-agent demo I've built had the same dirty secret: the "memory" lived in a Python list. Restart the process and the agents wake up with amnesia. Store it in a flat table and you can retrieve facts, but you can't ask the questions that actually matter — <em>who handed this to whom, why does this exist, what breaks if this changes?</em></p>
+<p>For the WeMakeDevs × FalkorDB <strong>Graph Hacks</strong> hackathon I built <strong>GraphHacks Nexus</strong> to answer one question honestly: <em>what happens when the graph is not a visualization on top of a database, but the database the product runs on?</em></p>
+
+<h2>What I built</h2>
+<p>GraphHacks Nexus is a multi-agent engineering cockpit. You type a feature in plain English — "Add an ElevenLabs voice-cloning endpoint" — and a four-agent squad writes a six-level maturity stack into the graph:</p>
+<ul>
+<li><strong>VibeArchitect (L0–L1)</strong> — the plain-English "what does this do" card and its unit economics.</li>
+<li><strong>FullStackBuilder (L2–L3)</strong> — the UI → API → database wiring and the real implementation.</li>
+<li><strong>SeniorAuditor (L4)</strong> — the security and spend audit.</li>
+<li><strong>PrincipalResearcher (L5)</strong> — complexity bounds and prior art.</li>
+</ul>
+<p>The whole thing is read at six depths through a <strong>Builder Maturity Dial</strong> (L0 Vibe Coder → L5 Principal) and filtered across <strong>17 domain lenses</strong>. The idea is simple: one connected graph, six audiences, zero lost context.</p>
+
+<h2>Why FalkorDB specifically</h2>
+<p>FalkorDB is a Redis-based graph database with a superpower for this exact problem: <strong>one instance holds thousands of isolated graphs</strong>. That gave me two things for free.</p>
+<h3>1. Tenant isolation as structure, not a filter</h3>
+<p>Each tenant's memory lives in its own named graph — <code>tenant:&lt;id&gt;</code>. Isolation isn't a <code>WHERE tenant_id = ...</code> clause that someone will eventually forget to add; it's the graph key itself. Every access goes through a single router (<code>db.named_graph()</code>), and there are no cross-graph reads.</p>
+<h3>2. MERGE makes agent memory idempotent</h3>
+<p>Agents re-read and re-write state constantly across handoffs. Because every write is <code>MERGE</code>-based, re-running anything is safe. I proved it with a concurrency test: 16 parallel writers produced 16 distinct rows and zero loss.</p>
+
+<h2>The memory model: three tiers in one graph</h2>
+<p>The graph isn't a message log. It composes three kinds of memory plus a coordination layer, all connected:</p>
+<ul>
+<li><strong>Episodic</strong> — <code>:User</code>, <code>:Session</code>, <code>:Turn</code>: what happened, when.</li>
+<li><strong>Semantic</strong> — <code>:Entity</code>, <code>:Fact</code>, and the L0–L5 <code>:ConceptNode</code> projection: what is true about the domain.</li>
+<li><strong>Procedural</strong> — <code>:Workflow</code> and <code>:Step</code>: what the team learned to do, replayable.</li>
+<li><strong>Coordination</strong> — <code>:Agent</code> and <code>:Handoff</code>: who handed what to whom and why.</li>
+</ul>
+<p>Typed edges do the storytelling: <code>[:PRODUCED]</code>, <code>[:IN_SESSION]</code>, <code>[:MENTIONS]</code>, <code>[:HAS_FACT]</code>, <code>[:DERIVED_FROM]</code>, <code>[:HANDED_TO]</code>, <code>[:TARGETS]</code>, and the one that makes the demo click — <code>[:ENDANGERS]</code>, a directed edge from an L4 security risk to the L0 feature it threatens.</p>
+
+<h2>The part that makes it real work</h2>
+<p>Here's the honest test for any "graph" project: <em>if you delete the graph, does the product still work?</em> If yes, the graph is decoration.</p>
+<p>In GraphHacks Nexus, stopping FalkorDB makes the cockpit fail — visibly. The frontend ships no fallback seed data. A dead database returns HTTP 503 and the app shows an error screen with a Retry button. Restart FalkorDB, hit Retry, and the graph is back. That flip is the whole submission, and it's the reason the memory had to live in a real database.</p>
+
+<h2>FalkorDB's algorithms are load-bearing, not cosmetic</h2>
+<p>Because FalkorDB ships graph algorithms and variable-length traversals, questions that would otherwise be pages of application code became single queries:</p>
+<pre><code>CALL algo.pageRank('Symbol', 'CALLS')
+YIELD node, score
+RETURN node.label, node.source_file, score
+ORDER BY score DESC LIMIT 10;</code></pre>
+<p>That's the "hotspots" query over the repository's own AST graph. Blast radius is a <code>[:CALLS*1..2]</code> traversal; shortest dependency paths drive an explainable-answer feature. Every answer returns a <strong>DecisionTrace</strong>: the exact Cypher, the parameters, the node ids it touched, and the query time in milliseconds. You can't fake that with a vector store.</p>
+
+<h2>One graph, three tracks</h2>
+<p>The same FalkorDB instance carries three projections:</p>
+<ul>
+<li><strong>Track 02 — Agent Memory &amp; Coordination</strong> (<code>tenant:&lt;id&gt;</code>): the four-tier model above, handoffs, isolation, concurrency.</li>
+<li><strong>Track 01 — Connected-Data Actions</strong> (<code>code:&lt;repoId&gt;</code>): the repo's AST graph, queried for blast radius, PageRank hotspots, and shortest paths.</li>
+<li><strong>Track 03 — Company Brain</strong> (<code>company:brain</code>): people, commits, docs and code, answering <em>who owns this</em>, <em>why does it exist</em>, and <em>where have the docs drifted from the code</em>.</li>
+</ul>
+<p>You can paste any GitHub URL and the backend clones it, builds its AST graph, and loads it — so the demo isn't hard-coded to one repo.</p>
+
+<h2>The LLM can't cheat without the graph</h2>
+<p>The guidance feature feeds real graph facts — PageRank hotspots, blast radius, owners, drift — into the LLM prompt and requires every claim to cite a concrete value. Remove FalkorDB and the model has nothing to ground on. The graph isn't just the UI's source of truth; it's the reason the AI's answer is worth trusting.</p>
+
+<h2>What I learned</h2>
+<ul>
+<li><strong>Multi-graph is an architecture, not a feature.</strong> Using the graph key as the tenant boundary removed an entire class of "oops, cross-tenant leak" bugs.</li>
+<li><strong>MERGE is the agent-memory primitive.</strong> Idempotency isn't a nice-to-have when agents retry and hand off; it's what makes the system safe to re-run.</li>
+<li><strong>Prove the dependency, don't describe it.</strong> "The graph does real work" is a claim; stopping the database and watching the app break is evidence.</li>
+<li><strong>Explainability comes from the database.</strong> Returning the Cypher and node ids with every answer turned a black box into something a reviewer can audit.</li>
+</ul>
+<p>If you're building agents and your memory is a list, a table, or a pile of embeddings, try drawing the relationships instead. The moment the graph becomes the thing your product depends on, the whole design gets simpler — and a lot more honest.</p>
+
+<h2>Links</h2>
+<ul>
+<li><strong>Repository:</strong> <a href="https://github.com/shyler-web/GraphHacks">https://github.com/shyler-web/GraphHacks</a></li>
+<li><strong>Architecture diagrams (C4):</strong> <a href="https://graphhacks-nexus-architecture.vercel.app/">https://graphhacks-nexus-architecture.vercel.app/</a></li>
+<li><strong>Cypher the product depends on:</strong> <a href="https://github.com/shyler-web/GraphHacks/blob/master/queries.cypher">queries.cypher</a></li>
+</ul>
+<p><em>Built for the WeMakeDevs × FalkorDB Graph Hacks hackathon — Track 02: Agent Memory and Coordination.</em></p>
+</article>
+</body>
+</html>

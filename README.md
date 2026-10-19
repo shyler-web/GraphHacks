@@ -14,6 +14,7 @@
 ## 📹 Submission Artifacts & Quick Links
 
 - **Demo Video:** [https://youtu.be/pP5ok3QK8us](https://youtu.be/pP5ok3QK8us)
+- **Architecture Blog & Deep Dive:** [`docs/architecture/blog.html`](./docs/architecture/blog.html)
 - **Interactive Architecture Diagrams (C4 Level):**
   - [System Context Diagram](https://graphhacks-nexus-architecture.vercel.app/nexus-context.html)
   - [Container Architecture Diagram](https://graphhacks-nexus-architecture.vercel.app/nexus-container.html)
@@ -51,14 +52,20 @@ The cockpit has **zero hardcoded fallback mock data**. If FalkorDB is offline, t
 
 ```bash
 # 1. Stop FalkorDB
-docker stop falkordb      # or: docker compose stop falkordb
+# If running via Docker Compose (Option A):
+docker compose stop falkordb
+# If running standalone container (Option B):
+docker stop falkordb
 
 # 2. Reload http://localhost:5173
 # -> Instantly renders the ErrorScreen ("FalkorDB unavailable (ConnectionError)")
 # -> Backend answers HTTP 503
 
 # 3. Start FalkorDB
-docker start falkordb     # or: docker compose start falkordb
+# If running via Docker Compose (Option A):
+docker compose start falkordb
+# If running standalone container (Option B):
+docker start falkordb
 
 # 4. Click "Retry" in Cockpit -> The live graph renders cleanly!
 ```
