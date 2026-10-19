@@ -14,13 +14,12 @@
 ## 📹 Submission Artifacts & Quick Links
 
 - **Demo Video:** [https://youtu.be/mBmGK204FBM](https://youtu.be/mBmGK204FBM)
-- **Architecture Blog & Deep Dive:** [`docs/architecture/blog.html`](./docs/architecture/blog.html)
+- **Architecture Blog & Deep Dive:** [https://graphhacks-nexus-architecture.vercel.app/blog.html](https://graphhacks-nexus-architecture.vercel.app/blog.html)
 - **Interactive Architecture Diagrams (C4 Level):**
   - [System Context Diagram](https://graphhacks-nexus-architecture.vercel.app/nexus-context.html)
   - [Container Architecture Diagram](https://graphhacks-nexus-architecture.vercel.app/nexus-container.html)
   - [Backend Components Diagram](https://graphhacks-nexus-architecture.vercel.app/nexus-component.html)
 - **Cypher Queries File:** [`queries.cypher`](./queries.cypher)
-- **Video Walkthrough Script:** [`docs/guides/DEMO-SCRIPT.md`](./docs/guides/DEMO-SCRIPT.md)
 
 ---
 
