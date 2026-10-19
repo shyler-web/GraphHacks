@@ -1,0 +1,11 @@
+# Never upload local secrets or build evidence to the public deployment.
+.env
+.env.*
+!.env.example
+.vercel
+
+# archify delivery receipts (regenerable build evidence, not shipped)
+*.finalize.json
+*.finalize-summary.json
+*.delivery.json
+*.browser-check.json
