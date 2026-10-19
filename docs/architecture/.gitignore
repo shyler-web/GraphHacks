@@ -1,2 +1,8 @@
 .vercel
 .env*
+
+# archify delivery receipts (regenerable build evidence, not shipped)
+*.finalize.json
+*.finalize-summary.json
+*.delivery.json
+*.browser-check.json

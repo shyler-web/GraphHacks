@@ -77,56 +77,75 @@ The graph model compositions live inside isolated FalkorDB named graphs (`tenant
 
 ```mermaid
 flowchart TD
-    subgraph Coordination["Coordination Tier"]
-        A0[":Agent (VibeArchitect)"]
-        A1[":Agent (FullStackBuilder)"]
-        A2[":Agent (SeniorAuditor)"]
-        H[":Handoff (ALERT_RAISED)"]
+    %% ── Coordination tier ─────────────────────────────
+    subgraph COORD["Coordination · who did what"]
+        A0[":Agent · VibeArchitect<br/>persona_level L0"]
+        A1[":Agent · FullStackBuilder<br/>persona_level L3"]
+        A2[":Agent · SeniorAuditor<br/>persona_level L4"]
+        H[":Handoff<br/>reason ALERT_RAISED"]
         A0 -->|"HANDED_TO {at}"| A1
         A1 -->|"HANDED_TO {at}"| A2
         H -->|"FROM_AGENT"| A1
         H -->|"TO_AGENT"| A2
     end
 
-    subgraph Episodic["Episodic Memory Tier"]
+    %% ── Episodic tier ─────────────────────────────────
+    subgraph EPI["Episodic · what happened"]
         U[":User"]
-        S[":Session"]
-        T[":Turn"]
+        S[":Session<br/>started_at"]
+        T[":Turn<br/>role · text · ts"]
         TP[":Topic"]
         U -->|"PARTICIPATED"| T
-        A0 -->|"PRODUCED"| T
         T -->|"IN_SESSION"| S
         T -->|"ABOUT"| TP
     end
 
-    subgraph Semantic["Semantic Memory Tier"]
+    %% ── Semantic tier ─────────────────────────────────
+    subgraph SEM["Semantic · what is known"]
         E[":Entity"]
-        F[":Fact"]
-        C0[":ConceptNode (L0 Vibe)"]
-        C3[":ConceptNode (L3 Code)"]
-        C4[":ConceptNode (L4 Risk)"]
-        T -->|"MENTIONS"| E
+        F[":Fact<br/>statement · confidence"]
+        C0[":ConceptNode<br/>L0 · Vibe"]
+        C3[":ConceptNode<br/>L3 · Code"]
+        C4[":ConceptNode<br/>L4 · Risk"]
         E -->|"HAS_FACT"| F
-        F -->|"DERIVED_FROM"| T
         C0 -->|"DEEPER_AT"| C3
         C4 -->|"ENDANGERS"| C0
     end
 
-    subgraph Procedural["Procedural Memory Tier"]
-        W[":Workflow (Playbook)"]
-        ST1[":Step 1"]
-        ST2[":Step 2"]
+    %% ── Procedural tier ───────────────────────────────
+    subgraph PROC["Procedural · how it's fixed"]
+        W[":Workflow<br/>Playbook"]
+        ST1[":Step<br/>order · action"]
+        ST2[":Step<br/>order · action"]
         W -->|"START"| ST1
         ST1 -->|"NEXT_STEP"| ST2
-        W -->|"LEARNED_FROM"| H
-        A2 -->|"EXECUTED {at}"| W
-        W -->|"GOVERNS"| C3
     end
 
+    %% ── Cross-tier links ──────────────────────────────
+    A0 -->|"PRODUCED"| T
+    T -->|"MENTIONS"| E
+    F -->|"DERIVED_FROM"| T
     H -->|"TARGETS"| C4
+    W -->|"LEARNED_FROM"| H
+    A2 -->|"EXECUTED {at}"| W
+    W -->|"GOVERNS"| C3
+
+    classDef coord fill:#3730a3,stroke:#818cf8,stroke-width:2px,color:#e0e7ff;
+    classDef epi fill:#155e75,stroke:#22d3ee,stroke-width:2px,color:#cffafe;
+    classDef sem fill:#065f46,stroke:#34d399,stroke-width:2px,color:#d1fae5;
+    classDef proc fill:#9a3412,stroke:#fb923c,stroke-width:2px,color:#ffedd5;
+    classDef risk fill:#9f1239,stroke:#fb7185,stroke-width:2px,color:#ffe4e6;
+
+    class A0,A1,A2,H coord;
+    class U,S,T,TP epi;
+    class E,F,C0,C3 sem;
+    class C4 risk;
+    class W,ST1,ST2 proc;
 ```
 
-> Reads as: a `:User`/`:Agent` produces an episodic `:Turn` (in a `:Session`, about a `:Topic`); the turn mentions semantic `:Entity`/`:Fact` nodes and links the L0→L5 `:ConceptNode` projection; a SeniorAuditor flags an L4 risk that `[:ENDANGERS]` the L0 card, and the fix is stored as a replayable `:Workflow` linked back to the `:Handoff` via `[:LEARNED_FROM]`.
+> **Reads as:** a `:User`/`:Agent` produces an episodic `:Turn` (in a `:Session`, about a `:Topic`); the turn [`MENTIONS`] semantic `:Entity`/`:Fact` nodes and the fix is captured as a replayable `:Workflow`. A `:SeniorAuditor` raises an L4 risk that `[:ENDANGERS]` the L0 card; the fix `[:LEARNED_FROM]` that `:Handoff` and `[:GOVERNS]` the L3 code concept.
+>
+> **Colour key:** violet = coordination · cyan = episodic · green = semantic · orange = procedural · red = L4 risk.
 
 ### 3.1 The Four Memory & Coordination Tiers
 
