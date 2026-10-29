@@ -1,4 +1,77 @@
-# GraphHacks Nexus — FalkorDB Multi-Agent Memory & Maturity Cockpit
+# Clarify + GraphHacks Nexus
+
+This repository contains **Clarify**, a Python refactor-review workflow being
+built for the Nebius × NVIDIA Global AI Hackathon, alongside the earlier
+**GraphHacks Nexus** FalkorDB cockpit documented below. Clarify currently runs
+through backend commands; it is not connected to the React cockpit or hosted as
+a separate web demo.
+
+## Clarify: current Python workflow
+
+Clarify ranks Python files by an **explainable comprehension-risk proxy**, then
+proposes a one-file refactor through the existing Nebius Token Factory adapter.
+The configured default is `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`; a different
+available NVIDIA model can be selected with `NEBIUS_MODEL`. The score helps
+prioritize review; it has **not** been validated as a measure of human
+comprehension.
+
+| Implemented capability | What it does |
+|---|---|
+| A/B/E scoring and ranking | Locally ranks Python source by control-flow cost (A), size and branch burden (B), and missing docstrings (E), with per-file evidence. Scoring uses no model tokens. |
+| Frozen behavior checks | Runs the existing baseline and new characterization tests on the original file before freezing them. The same frozen tests check a candidate. |
+| Isolated one-file proposal | Requests complete replacement source from Nemotron, writes it only to a temporary copy, and runs repository tests through an offline, resource-limited Docker executor. |
+| Before/after validation | Requires passing frozen tests, at least a one-point overall and structural A+B score reduction, and rejects simple comment or helper-splitting score games. These are MVP heuristics. |
+| Reviewer handoff | Saves `proposal.diff`, `result.json`, and `INTENT_NOTE.md` with a model-written intent note, one specific reviewer question, and separate test/score evidence. |
+| PR delivery | Revalidates the saved patch, checks the fresh GitHub base, includes frozen tests, and opens a PR through `gh` only when explicitly run with `--publish`. It does not edit the original repository. |
+
+### Try the local, keyless parts
+
+With Python 3.12+ installed, run from `backend/`:
+
+```bash
+python -m app.cognitive_debt .. --limit 10
+python -B -m unittest discover -s tests -q
+python scripts/demo_rejected_patch.py C:/work/rejected-demo
+```
+
+The first command prints worst-file ranking and A/B/E evidence. The tests use
+small owned fixtures. The last command deliberately makes an incorrect change:
+its baseline passes, its frozen characterization test fails, and the proposal
+is saved as `rejected`. Give the demo command a **new output directory**.
+
+### Run a live proposal and deliver a PR
+
+Follow the example configuration and commands in
+[`backend/AGENT_WORKFLOW.md`](./backend/AGENT_WORKFLOW.md). The sequence is:
+
+1. Write characterization tests for the target Python file and freeze them only
+   after they pass on the original alongside the existing baseline.
+2. Set `NEBIUS_API_KEY`, ensure a suitable NVIDIA model is available through
+   Nebius Token Factory, and run the one-file refactor agent with Docker.
+3. Inspect the diff, intent note, reviewer question, and validation report.
+   Revalidate and prepare `PR_BODY.md` with `app.pr_delivery`.
+4. On a trusted fork you control, verify `git remote -v`, then use
+   `app.pr_delivery --publish` with an authenticated GitHub CLI to open the PR.
+
+Docker needs a running daemon and a pre-pulled image containing the target
+repository's test dependencies. Test containers have no network access or
+provider credentials. **The 25 backend fixture tests passed locally**, but a
+live Docker run, Nebius model call, and GitHub CLI publication have not yet been
+verified for this Clarify workflow. Passing tests cover only their observed
+cases and do not prove full behavioral equivalence. The earlier cockpit demo
+links below demonstrate GraphHacks Nexus, not this Clarify workflow.
+
+### Work added during the current hackathon build
+
+GraphHacks Nexus existed before this submission period. The Clarify work added
+the Python A/B/E ranking, frozen characterization and baseline checks, isolated
+refactor proposal, before/after and anti-gaming validation, rejected-patch demo,
+reviewer intent note, and guarded PR delivery. The separate guide above explains
+how to run and inspect those new modules.
+
+---
+
+## Earlier project: GraphHacks Nexus — FalkorDB Multi-Agent Memory & Maturity Cockpit
 
 > **Track Entered:** **Track 02 — Agent Memory and Coordination**  
 > *(Unified with real Track 01 Code Graph and Track 03 Company Brain running on the same FalkorDB engine)*  
@@ -330,7 +403,14 @@ uv run python scripts/verify_track3.py  # Track 03 100% cited provenance & drift
 
 ## 7. AI Assistant Disclosure (Rule 11)
 
-An AI coding assistant (Claude / Antigravity Agent) was used under the author's direct supervision and architectural design. The author designed the multi-tier memory schema, selected FalkorDB multigraph isolation, verified all Cypher queries, executed every test suite, and verified end-to-end functionality. No AI-generated code was merged without passing automated verification and health checks.
+AI coding assistants (Claude / Antigravity Agent for the earlier Nexus work and
+Codex for the Clarify Python workflow) were used under participant supervision.
+The earlier project used the multi-tier FalkorDB memory design and the
+verification scripts listed above. For Clarify, the assistant implemented the
+scoring, frozen-test, isolated-refactor, validation, reviewer-note, and PR
+delivery modules; the 25 backend fixture tests passed locally. The Clarify
+Docker, live Nebius, and GitHub publication paths still need integration checks
+before claiming a fully verified end-to-end run.
 
 ---
 
