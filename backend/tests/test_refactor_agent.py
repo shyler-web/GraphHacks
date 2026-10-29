@@ -57,6 +57,10 @@ class RefactorAgentTests(unittest.TestCase):
         )
         self.bundle = self.root / "frozen"
         self.output = self.root / "proposal"
+        self.review_fields = {
+            "intent_note": "The branch is replaced with a clamp while preserving zero and negative quantities.",
+            "reviewer_question": "What should the refactored function return for a negative quantity?",
+        }
         python = sys.executable
         freeze_suite(
             self.repo, "price.py", ["tests/test_characterization.py"],
@@ -75,6 +79,7 @@ class RefactorAgentTests(unittest.TestCase):
             generator=lambda _system, _user: {
                 "source": "def price(quantity):\n    return max(quantity, 0) * 5\n",
                 "summary": "Simplify the branch while preserving zero and negative inputs",
+                **self.review_fields,
             },
             executor=executor,
         )
@@ -87,6 +92,7 @@ class RefactorAgentTests(unittest.TestCase):
         self.assertEqual((self.repo / "price.py").read_text(encoding="utf-8"), self.original_source)
         self.assertIn("return max(quantity, 0) * 5", (self.output / "proposal.diff").read_text(encoding="utf-8"))
         self.assertTrue((self.output / "result.json").is_file())
+        self.assertIn("Reviewer question:", (self.output / "INTENT_NOTE.md").read_text(encoding="utf-8"))
 
     def test_behavior_change_is_rejected_but_reviewable(self) -> None:
         executor = FixtureExecutor()
@@ -95,6 +101,7 @@ class RefactorAgentTests(unittest.TestCase):
             generator=lambda _system, _user: {
                 "source": self.original_source.replace("quantity * 5", "quantity * 6"),
                 "summary": "A deliberately incorrect edit",
+                **self.review_fields,
             },
             executor=executor,
         )
@@ -118,7 +125,8 @@ class RefactorAgentTests(unittest.TestCase):
         result = run_refactor(
             self.repo, "price.py", self.bundle, self.output,
             generator=lambda _system, _user: {
-                "source": documented, "summary": "Only added docstrings"
+                "source": documented, "summary": "Only added documentation strings",
+                **self.review_fields,
             },
             executor=executor,
         )
@@ -192,7 +200,8 @@ class RefactorAgentTests(unittest.TestCase):
         executor = FixtureExecutor()
         with patch("app.refactor_agent.llm.generate_json", return_value={
             "source": "def price(quantity):\n    return max(quantity, 0) * 5\n",
-            "summary": "Simplified",
+            "summary": "Simplified branch handling for quantities",
+            **self.review_fields,
         }) as generate:
             result = run_refactor(
                 self.repo, "price.py", self.bundle, self.output,
