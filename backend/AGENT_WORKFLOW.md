@@ -18,7 +18,8 @@ The original repository is never edited by the agent or PR delivery command.
   supplies its default when this is omitted.
 - For optional PR publishing: authenticated Git push access to your GitHub
   repository and the authenticated GitHub CLI (`gh`). Use a trusted fork you
-  control; the command does not publish to an arbitrary third-party repository.
+  control. The command publishes to the configured `origin`, so check that
+  remote before using `--publish`.
 
 ## 1. Freeze the original behavior
 
@@ -96,7 +97,8 @@ the model-written intent, one question the reviewer should answer, and the
 before/after score and frozen-test results. The reviewer question is a prompt
 for human review, not an automated proof of comprehension.
 
-To publish from a disposable fresh clone of the GitHub base branch:
+Check `git remote -v` in the target repository to confirm `origin` is your fork.
+Then publish from a disposable fresh clone of the GitHub base branch:
 
 ```text
 python -m app.pr_delivery C:/work/my-python-repo C:/work/frozen-calculate C:/work/proposal-1 --image python:3.12-slim --publish --base master --branch codex/simplify-calculate
