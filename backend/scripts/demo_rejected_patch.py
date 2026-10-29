@@ -67,6 +67,8 @@ def main() -> int:
             generator=lambda _system, _user: {
                 "source": source.replace("quantity * 5", "quantity * 6"),
                 "summary": "Deliberately injected regression for a rejection demo",
+                "intent_note": "The multiplier was changed as a deliberate regression to show that frozen tests catch it.",
+                "reviewer_question": "What price should the original function return for a quantity of three?",
             },
             executor=TrustedFixtureExecutor(),
         )
